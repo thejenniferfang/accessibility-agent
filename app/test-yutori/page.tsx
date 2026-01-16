@@ -9,18 +9,42 @@ export default function YutoriTestPage() {
   const [error, setError] = useState('');
   const [creatingTickets, setCreatingTickets] = useState(false);
   const [ticketResult, setTicketResult] = useState<any>(null);
+  const [screenshots, setScreenshots] = useState<string[]>([]);
+
+  const extractScreenshotUrls = (log: string): string[] => {
+    const foundUrls = new Set<string>();
+    try {
+        const lines = log.split('\n');
+        for (const line of lines) {
+            try {
+                const json = JSON.parse(line);
+                if (json.screenshotUrl) foundUrls.add(json.screenshotUrl);
+                if (json.screenshot) foundUrls.add(json.screenshot);
+            } catch (e) {}
+        }
+    } catch (e) {}
+    
+    const matches = log.matchAll(/https?:\/\/[^\s"']+\.(?:png|jpg|jpeg|webp)/gi);
+    for (const match of matches) {
+        foundUrls.add(match[0]);
+    }
+    
+    return Array.from(foundUrls);
+  };
 
   const handleTest = async () => {
     setLoading(true);
     setError('');
     setResult(null);
     setTicketResult(null);
+    const foundScreenshots = extractScreenshotUrls(inputLog);
+    setScreenshots(foundScreenshots);
 
     try {
       const response = await fetch('/api/test-yutori', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ automationLog: inputLog }),
+        body: JSON.stringify({ automationLog: inputLog, screenshotUrls: foundScreenshots }),
       });
 
       const data = await response.json();
@@ -87,6 +111,19 @@ export default function YutoriTestPage() {
 
       {result && (
         <div className="space-y-6">
+          {screenshots.length > 0 && (
+            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-md border dark:border-gray-700">
+                <h2 className="text-xl font-semibold mb-3">Screenshots ({screenshots.length})</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {screenshots.map((url, i) => (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block border rounded-md overflow-hidden hover:opacity-90 transition">
+                            <img src={url} alt={`Screenshot ${i + 1}`} className="w-full h-auto object-cover" />
+                        </a>
+                    ))}
+                </div>
+            </div>
+          )}
+
           <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-md border dark:border-gray-700">
             <h2 className="text-xl font-semibold mb-3">Human Readable Summary</h2>
             <div className="prose dark:prose-invert max-w-none">
