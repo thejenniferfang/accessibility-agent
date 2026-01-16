@@ -25,6 +25,12 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("Upstream Mino API Error:", {
+        status: response.status,
+        statusText: response.statusText,
+        details: errorText,
+        requestBody: { url, goal } // Log what we sent
+      });
       return NextResponse.json(
         { error: `Upstream error: ${response.status} ${response.statusText}`, details: errorText }, 
         { status: response.status }

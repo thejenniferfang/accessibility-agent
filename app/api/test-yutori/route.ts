@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "YUTORI_API_KEY is not set" }, { status: 500 });
     }
     
-    const { automationLog } = await req.json();
+    const { automationLog, screenshotUrls } = await req.json();
 
     const messages: any[] = [
       {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
         content: [
           {
             type: "text",
-            text: `Here is the log from the automation run:\n\n${automationLog}\n\nPlease analyze this output.
+            text: `Here is the log from the automation run:\n\n${automationLog}\n\nPlease analyze this output and the accompanying screenshot(s).
             
             Return a JSON object with the following structure:
             {
@@ -41,6 +41,18 @@ export async function POST(req: NextRequest) {
         ],
       },
     ];
+
+    if (screenshotUrls && screenshotUrls.length > 0) {
+      messages.push({
+        role: "observation",
+        content: screenshotUrls.map((url: string) => ({
+          type: "image_url",
+          image_url: {
+            url: url,
+          },
+        })),
+      });
+    }
 
     const response = await client.chat.completions.create({
       model: "n1-preview-2025-11",
