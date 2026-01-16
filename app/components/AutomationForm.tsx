@@ -198,15 +198,18 @@ export default function AutomationForm() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-8 transition-all hover:border-white/20">
-        <h2 className="text-xl font-medium mb-6 text-white/90 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+    <div className="space-y-6">
+      <div className="bg-white/5 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] p-8 transition-all hover:border-white/30 relative overflow-hidden group">
+        {/* Glass sheen effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-50 pointer-events-none" />
+        
+        <h2 className="text-xl font-medium mb-6 text-white/90 flex items-center gap-2 relative z-10">
+          <span className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]"></span>
           New Automation
         </h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
           <div className="space-y-2">
-            <label htmlFor="urls" className="block text-xs font-medium uppercase tracking-wider text-gray-400">Target URL(s)</label>
+            <label htmlFor="urls" className="block text-xs font-medium uppercase tracking-wider text-blue-200/70">Target URL(s)</label>
             <input
               id="urls"
               type="text"
@@ -214,25 +217,25 @@ export default function AutomationForm() {
               onChange={(e) => setUrls(e.target.value)}
               placeholder="https://example.com, https://another.com"
               required
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+              className="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all backdrop-blur-sm"
             />
-            <p className="text-xs text-gray-500">Separate multiple URLs with commas.</p>
+            <p className="text-xs text-white/40">Separate multiple URLs with commas.</p>
           </div>
           <div className="space-y-2">
-            <label htmlFor="goal" className="block text-xs font-medium uppercase tracking-wider text-gray-400">Goal</label>
+            <label htmlFor="goal" className="block text-xs font-medium uppercase tracking-wider text-blue-200/70">Goal</label>
             <textarea
               id="goal"
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               placeholder="Find all subscription plans and test accessibility..."
               required
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg h-32 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all resize-none"
+              className="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl h-24 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all resize-none backdrop-blur-sm"
             />
           </div>
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-white text-black hover:bg-gray-200 font-medium px-6 py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform active:scale-[0.98]"
+            className="w-full bg-white/90 hover:bg-white text-black font-semibold px-6 py-3.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-white/20 transform active:scale-[0.99]"
           >
             {isLoading ? (
               <>
