@@ -14,13 +14,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No tickets provided" }, { status: 400 });
     }
 
-    // 1. Get the first Team ID
+    // 1. Get the first Team ID and its Active workflow state
     const teamQuery = `
       query {
         teams(first: 1) {
           nodes {
             id
             name
+            states {
+              nodes {
+                id
+                name
+                type
+              }
+            }
           }
         }
       }
@@ -36,11 +43,16 @@ export async function POST(req: NextRequest) {
     });
 
     const teamData = await teamResponse.json();
-    const teamId = teamData?.data?.teams?.nodes?.[0]?.id;
+    const teamNode = teamData?.data?.teams?.nodes?.[0];
+    const teamId = teamNode?.id;
 
     if (!teamId) {
       return NextResponse.json({ error: "Could not find a Linear team to add issues to." }, { status: 500 });
     }
+
+    // Find the first state with type "started" (Active)
+    const activeState = teamNode.states.nodes.find((s: any) => s.type === "started" || s.name.toLowerCase() === "active" || s.name.toLowerCase() === "in progress");
+    const stateId = activeState?.id;
 
     // 2. Create issues
     const results = [];
@@ -55,12 +67,13 @@ export async function POST(req: NextRequest) {
       const priority = priorityMap[ticket.priority?.toLowerCase()] ?? 0;
 
       const mutation = `
-        mutation IssueCreate($title: String!, $description: String!, $teamId: String!, $priority: Int) {
+        mutation IssueCreate($title: String!, $description: String!, $teamId: String!, $priority: Int, $stateId: String) {
           issueCreate(input: {
             title: $title
             description: $description
             teamId: $teamId
             priority: $priority
+            stateId: $stateId
           }) {
             success
             issue {
@@ -85,6 +98,7 @@ export async function POST(req: NextRequest) {
             description: ticket.description,
             teamId,
             priority,
+            stateId,
           },
         }),
       });
