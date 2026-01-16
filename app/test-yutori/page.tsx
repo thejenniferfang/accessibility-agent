@@ -122,6 +122,15 @@ export default function YutoriTestPage() {
             />
           </div>
           <button 
+            onClick={() => {
+                setScoutQuery("Find 30 early-stage startups with accessibility gaps"); // Short description for UI
+                createScout(); // Uses current logic but logic in createScout needs to handle specific prompt if we want it hardcoded or use the scoutManager default
+            }}
+            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 h-10 whitespace-nowrap"
+          >
+            Find Accessibility Gaps
+          </button>
+          <button 
             onClick={createScout}
             disabled={scoutLoading}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 h-10"
@@ -204,8 +213,48 @@ export default function YutoriTestPage() {
                 <div className="space-y-4">
                   {scoutResults.map((item, idx) => {
                     const data = item.structured_result || {};
+                    
+                    // Handle NEW schema (array of results)
+                    if (data.results && Array.isArray(data.results)) {
+                      return data.results.map((site: any, siteIdx: number) => (
+                        <div key={`${item.id || idx}-${siteIdx}`} className="border dark:border-gray-700 rounded p-3 hover:shadow-md transition-shadow mb-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-bold text-blue-600 dark:text-blue-400">
+                              <a href={site.website_url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                {site.startup_name || "Unknown Startup"}
+                              </a>
+                            </h4>
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                              (site.severity_score || 0) >= 7 ? 'bg-red-100 text-red-800' :
+                              (site.severity_score || 0) >= 4 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              Score: {site.severity_score || 'N/A'}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-500 mb-1">
+                            {site.stage} • {site.source}
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{site.why_this_is_bad}</p>
+                          
+                          {site.accessibility_issues && site.accessibility_issues.length > 0 && (
+                            <div className="text-xs bg-red-50 dark:bg-red-900/20 p-2 rounded mb-2 text-red-700 dark:text-red-300">
+                              <strong>Issues:</strong> {site.accessibility_issues.join(', ')}
+                            </div>
+                          )}
+                          
+                          {site.notes && (
+                            <div className="text-xs text-gray-500 italic">
+                              Notes: {site.notes}
+                            </div>
+                          )}
+                        </div>
+                      ));
+                    }
+
+                    // Handle OLD schema (single object)
                     return (
-                      <div key={item.id || idx} className="border dark:border-gray-700 rounded p-3 hover:shadow-md transition-shadow">
+                      <div key={item.id || idx} className="border dark:border-gray-700 rounded p-3 hover:shadow-md transition-shadow mb-4">
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="font-bold text-blue-600 dark:text-blue-400">
                             <a href={data.site_url} target="_blank" rel="noopener noreferrer" className="hover:underline">

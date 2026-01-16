@@ -16,12 +16,25 @@ export interface YutoriScoutResultItem {
   timestamp: number;
   content: string;
   structured_result?: {
-    site_url: string;
+    // Old schema fields
+    site_url?: string;
     site_name?: string;
     description?: string;
     ui_issues?: string[];
     severity?: "Low" | "Medium" | "High";
     quick_fix?: string;
+
+    // New schema fields
+    results?: Array<{
+        startup_name: string;
+        website_url: string;
+        source?: string;
+        stage?: string;
+        accessibility_issues?: string[];
+        severity_score?: number;
+        why_this_is_bad?: string;
+        notes?: string;
+    }>;
   };
 }
 
@@ -36,22 +49,29 @@ export async function createScout(
   const schema = {
     type: "object",
     properties: {
-      site_url: { type: "string", description: "The URL of the startup's landing page" },
-      site_name: { type: "string", description: "Name of the startup/project" },
-      description: { type: "string", description: "Short description of what the startup does" },
-      ui_issues: { 
-        type: "array", 
-        items: { type: "string" },
-        description: "List of identified UI/UX or accessibility issues" 
-      },
-      severity: { 
-        type: "string", 
-        enum: ["Low", "Medium", "High"], 
-        description: "Overall severity of the design/accessibility flaws" 
-      },
-      quick_fix: { type: "string", description: "One high-impact suggestion to improve the site" }
+      results: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            startup_name: { type: "string" },
+            website_url: { type: "string", description: "https://example.com" },
+            source: { type: "string", description: "Product Hunt | YC | Indie Hackers | Reddit | Other" },
+            stage: { type: "string", description: "idea | MVP | beta | early-stage" },
+            accessibility_issues: { 
+              type: "array", 
+              items: { type: "string" },
+              description: "List of accessibility issues like 'missing alt text', 'low color contrast', etc."
+            },
+            severity_score: { type: "integer", description: "Severity score from 1 to 10" },
+            why_this_is_bad: { type: "string", description: "Concrete explanation of the accessibility failures" },
+            notes: { type: "string", description: "Optional context (solo founder, hackathon project, etc.)" }
+          },
+          required: ["startup_name", "website_url", "accessibility_issues", "severity_score", "why_this_is_bad"]
+        }
+      }
     },
-    required: ["site_url", "ui_issues", "severity"]
+    required: ["results"]
   };
 
   const response = await fetch(`${YUTORI_API_URL}/v1/scouting/tasks`, {
@@ -65,10 +85,50 @@ export async function createScout(
       schedule: schedule, // "once a day"
       schema: schema,
       instructions: `
-        Find early-stage startup websites, particularly those asking for feedback on Reddit (r/roastmystartup, r/SideProject), IndieHackers, or Product Hunt.
-        Focus on "scrappy" or "MVP" sites that likely have accessibility or UI issues.
-        Verify the URL is valid and reachable.
-        Ignore major social media profiles (Twitter, LinkedIn) - find the actual project website.
+        **Find me 30 early-stage startups or indie products with publicly accessible websites that have clearly bad web accessibility.**
+
+        ### What “early-stage” means
+        * MVPs, betas, solo-founder projects, YC-style startups, hackathon demos
+        * Not enterprise companies, not polished Big Tech sites
+        * Often found on Product Hunt, YC Directory, Indie Hackers, Reddit, or personal domains
+
+        ### What “bad accessibility” means (any apply)
+        * Missing image alt text
+        * Poor color contrast (text hard to read)
+        * No keyboard navigation or focus states
+        * Forms without labels
+        * Non-semantic HTML (everything is divs/spans)
+        * Missing ARIA labels
+        * Broken tab order
+        * Text embedded in images
+        * No skip-to-content link
+        * Estimated Lighthouse accessibility score under 70
+
+        ### Where to search
+        * Product Hunt (low-upvote or new launches)
+        * YC Startup Directory
+        * Indie Hackers projects
+        * Reddit startup / roast threads
+        * Hackathon demo pages
+        * Personal startup landing pages
+
+        ### Output requirements (STRICT)
+        Return **ONLY valid JSON**.
+        No markdown. No commentary.
+        
+        ### Constraints
+        * Exactly **30 results**
+        * Websites must be **live**
+        * Do **not** invent startups
+        * Skip any site you are unsure about
+        * Prefer scrappy, fast-built MVPs
+
+        ### Behavior
+        * Be decisive and heuristic — perfection not required
+        * List the **top 2–4 accessibility issues per site**
+        * Bias toward obvious accessibility failures
+
+        **Start now and return only the JSON.**
       `
     })
   });
