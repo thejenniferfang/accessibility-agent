@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     }
     
     const { automationLog, screenshotUrls } = await req.json();
-
+// DO NOT EDIT THIS IS FOR TESTING ONLY. 
     const messages: any[] = [
       {
         role: "user",
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
             
             Return a JSON object with the following structure:
             {
-              "summary": "A human-readable summary of the findings (markdown supported)",
+              "summary": "A human-readable, concise summary of each of the findings (markdown supported)",
               "tickets": [
                 {
                   "title": "Short title for the issue",

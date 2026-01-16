@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
             
             Return a JSON object with the following structure:
             {
-              "summary": "A human-readable summary of the findings (markdown supported)",
+              "summary": "A human-readable, concise summary of each of the findings (markdown supported). For each finding, create a ticket. Create a minimum of 3 tickets no matter what.",
               "tickets": [
                 {
                   "title": "Short title for the issue",
@@ -61,6 +61,8 @@ export async function POST(req: NextRequest) {
       messages: messages,
       response_format: { type: "json_object" }
     });
+
+    console.log("Yutori API Response Body:", JSON.stringify(response, null, 2));
 
     const content = response.choices[0].message.content || "{}";
     let parsedData;
