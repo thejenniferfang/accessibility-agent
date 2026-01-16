@@ -28,12 +28,7 @@ export interface YutoriScoutResultItem {
     results?: Array<{
         startup_name: string;
         website_url: string;
-        source?: string;
-        stage?: string;
-        accessibility_issues?: string[];
-        severity_score?: number;
-        why_this_is_bad?: string;
-        notes?: string;
+        accessibility_issues: string[];
     }>;
   };
 }
@@ -55,19 +50,13 @@ export async function createScout(
           type: "object",
           properties: {
             startup_name: { type: "string" },
-            website_url: { type: "string", description: "https://example.com" },
-            source: { type: "string", description: "Product Hunt | YC | Indie Hackers | Reddit | Other" },
-            stage: { type: "string", description: "idea | MVP | beta | early-stage" },
+            website_url: { type: "string" },
             accessibility_issues: { 
               type: "array", 
-              items: { type: "string" },
-              description: "List of accessibility issues like 'missing alt text', 'low color contrast', etc."
-            },
-            severity_score: { type: "integer", description: "Severity score from 1 to 10" },
-            why_this_is_bad: { type: "string", description: "Concrete explanation of the accessibility failures" },
-            notes: { type: "string", description: "Optional context (solo founder, hackathon project, etc.)" }
+              items: { type: "string" }
+            }
           },
-          required: ["startup_name", "website_url", "accessibility_issues", "severity_score", "why_this_is_bad"]
+          required: ["startup_name", "website_url", "accessibility_issues"]
         }
       }
     },
@@ -81,54 +70,28 @@ export async function createScout(
       'X-API-Key': apiKey, // Trying X-API-Key again as Bearer failed 403
     },
     body: JSON.stringify({
-      query: query,
-      schedule: schedule, // "once a day"
+      query: "Find me 30 early-stage startups or indie products with publicly accessible websites that have clearly bad web accessibility.",
+      schedule: schedule, 
       schema: schema,
       instructions: `
-        **Find me 30 early-stage startups or indie products with publicly accessible websites that have clearly bad web accessibility.**
+        Find me 30 early-stage startups or indie products with publicly accessible websites that have clearly bad web accessibility.
+ 
+        📦 Output Format (STRICT)
 
-        ### What “early-stage” means
-        * MVPs, betas, solo-founder projects, YC-style startups, hackathon demos
-        * Not enterprise companies, not polished Big Tech sites
-        * Often found on Product Hunt, YC Directory, Indie Hackers, Reddit, or personal domains
+        Return ONLY valid JSON.
+        No markdown, no commentary, no explanations.
 
-        ### What “bad accessibility” means (any apply)
-        * Missing image alt text
-        * Poor color contrast (text hard to read)
-        * No keyboard navigation or focus states
-        * Forms without labels
-        * Non-semantic HTML (everything is divs/spans)
-        * Missing ARIA labels
-        * Broken tab order
-        * Text embedded in images
-        * No skip-to-content link
-        * Estimated Lighthouse accessibility score under 70
-
-        ### Where to search
-        * Product Hunt (low-upvote or new launches)
-        * YC Startup Directory
-        * Indie Hackers projects
-        * Reddit startup / roast threads
-        * Hackathon demo pages
-        * Personal startup landing pages
-
-        ### Output requirements (STRICT)
-        Return **ONLY valid JSON**.
-        No markdown. No commentary.
-        
-        ### Constraints
-        * Exactly **30 results**
-        * Websites must be **live**
-        * Do **not** invent startups
-        * Skip any site you are unsure about
-        * Prefer scrappy, fast-built MVPs
-
-        ### Behavior
-        * Be decisive and heuristic — perfection not required
-        * List the **top 2–4 accessibility issues per site**
-        * Bias toward obvious accessibility failures
-
-        **Start now and return only the JSON.**
+        {
+          "results": [
+            {
+              "startup_name": "string",
+              "website_url": "string",
+              "accessibility_issues": [
+                "string"
+              ]
+            }
+          ]
+        }
       `
     })
   });
