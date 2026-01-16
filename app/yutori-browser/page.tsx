@@ -1,6 +1,6 @@
-import AutomationForm from "./components/AutomationForm";
+import YutoriAutomationForm from "../components/YutoriAutomationForm";
 
-export default function Home() {
+export default function YutoriBrowserPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black text-black dark:text-white">
       <main className="container mx-auto py-12 px-4">
@@ -9,11 +9,11 @@ export default function Home() {
             Accessibility Agent
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Test the Browsing agent API with real-time streaming responses.
+            Test the Mino AI automation API with real-time streaming responses.
           </p>
         </div>
         
-        <AutomationForm />
+        <YutoriAutomationForm />
       </main>
     </div>
   );
