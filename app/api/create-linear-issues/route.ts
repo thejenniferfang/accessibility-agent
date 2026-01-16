@@ -57,14 +57,19 @@ export async function POST(req: NextRequest) {
     // 2. Create issues
     const results = [];
     for (const ticket of tickets) {
+      // Linear priority mapping: 0 = No priority, 1 = Urgent, 2 = High, 3 = Medium, 4 = Low
       const priorityMap: Record<string, number> = {
-        high: 1, // Urgent
-        medium: 2, // High
-        low: 3, // Normal
-        none: 0, // No priority
+        urgent: 1,
+        high: 2,
+        medium: 3,
+        low: 4,
+        none: 0,
       };
 
-      const priority = priorityMap[ticket.priority?.toLowerCase()] ?? 0;
+      const ticketPriority = ticket.priority?.toLowerCase() || 'none';
+      const priority = priorityMap[ticketPriority] ?? 0;
+      
+      console.log(`Setting priority for ticket "${ticket.title}": ${ticketPriority} -> ${priority}`);
 
       const mutation = `
         mutation IssueCreate($title: String!, $description: String!, $teamId: String!, $priority: Int, $stateId: String) {

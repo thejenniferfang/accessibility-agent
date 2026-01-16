@@ -24,6 +24,7 @@ export default function AutomationForm() {
   const [createScoutResult, setCreateScoutResult] = useState<any>(null);
   
   const [lastLog, setLastLog] = useState<string>('');
+  const [expandedTickets, setExpandedTickets] = useState<Set<number>>(new Set());
 
   const HARDCODED_URLS = [
     'https://www.w3.org/WAI/',
@@ -552,21 +553,36 @@ Completion
                   <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Identified Issues ({analysisResult.tickets?.length || 0})</h4>
                 </div>
                 <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
-                    {analysisResult.tickets?.map((ticket, i) => (
-                        <div key={i} className="group p-4 border border-white/10 rounded-xl bg-white/5 hover:bg-white/10 hover:border-blue-400/50 transition-all duration-200">
-                            <div className="flex justify-between items-start mb-2">
-                                <span className="font-medium text-white group-hover:text-blue-300 transition-colors">{ticket.title}</span>
-                                <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-full ${
-                                    ticket.priority === 'high' ? 'bg-red-500/20 text-red-300 border border-red-500/30' :
-                                    ticket.priority === 'medium' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                                    'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                                }`}>
-                                    {ticket.priority}
-                                </span>
+                    {analysisResult.tickets?.map((ticket, i) => {
+                        const isExpanded = expandedTickets.has(i);
+                        return (
+                            <div 
+                                key={i} 
+                                onClick={() => {
+                                    const newExpanded = new Set(expandedTickets);
+                                    if (isExpanded) {
+                                        newExpanded.delete(i);
+                                    } else {
+                                        newExpanded.add(i);
+                                    }
+                                    setExpandedTickets(newExpanded);
+                                }}
+                                className="group p-4 border border-white/10 rounded-xl bg-white/5 hover:bg-white/10 hover:border-blue-400/50 transition-all duration-200 cursor-pointer"
+                            >
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="font-medium text-white group-hover:text-blue-300 transition-colors">{ticket.title}</span>
+                                    <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-full ${
+                                        ticket.priority === 'high' ? 'bg-red-500/20 text-red-300 border border-red-500/30' :
+                                        ticket.priority === 'medium' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                                        'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                    }`}>
+                                        {ticket.priority}
+                                    </span>
+                                </div>
+                                <p className={`text-sm text-gray-400 leading-relaxed group-hover:text-gray-300 ${isExpanded ? '' : 'line-clamp-2'}`}>{ticket.description}</p>
                             </div>
-                            <p className="text-sm text-gray-400 line-clamp-2 leading-relaxed group-hover:text-gray-300">{ticket.description}</p>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 <div className="mt-6 pt-6 border-t border-white/10">
