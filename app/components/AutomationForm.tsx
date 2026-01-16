@@ -2,10 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react';
 
+import ReactMarkdown from 'react-markdown';
+
 export default function AutomationForm() {
   const [urls, setUrls] = useState('');
-  const [goal, setGoal] = useState('');
+  const [selectedFramework, setSelectedFramework] = useState('WCAG');
   const [output, setOutput] = useState('');
+  const [isOutputExpanded, setIsOutputExpanded] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('Processing...');
   const [analysisResult, setAnalysisResult] = useState<{ summary: string, tickets: any[] } | null>(null);
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [isCreatingTickets, setIsCreatingTickets] = useState(false);
@@ -15,12 +19,62 @@ export default function AutomationForm() {
   
   const [isFindingOwners, setIsFindingOwners] = useState(false);
   const [findOwnersResult, setFindOwnersResult] = useState<any>(null);
+  
+  const [isCreatingScout, setIsCreatingScout] = useState(false);
+  const [createScoutResult, setCreateScoutResult] = useState<any>(null);
 
   const HARDCODED_URLS = [
     'https://www.w3.org/WAI/',
     'https://webaim.org/',
     'https://a11yproject.com/',
   ];
+
+  const FRAMEWORKS = [
+    { id: 'WCAG', name: 'WCAG (Web Content Accessibility Guidelines)', description: 'W3C standard; global default (2.1/2.2 most used).' },
+    { id: 'APG', name: 'ARIA Authoring Practices (APG)', description: 'Patterns for accessible interactive components.' },
+    { id: 'Section508', name: 'Section 508 (US)', description: 'Federal accessibility requirements (maps to WCAG).' },
+    { id: 'EN301549', name: 'EN 301 549 (EU)', description: 'EU public sector standard (based on WCAG).' },
+    { id: 'ADA', name: 'ADA (US)', description: 'Civil rights law; WCAG used as the technical benchmark.' },
+    { id: 'ATAG', name: 'ATAG', description: 'Accessibility for authoring tools (CMS, editors).' },
+    { id: 'UAAG', name: 'UAAG', description: 'Accessibility for browsers and user agents.' },
+    { id: 'ISO40500', name: 'ISO/IEC 40500', description: 'ISO adoption of WCAG 2.0.' },
+    { id: 'BBC_GEL', name: 'BBC GEL / GOV.UK Design System', description: 'Practical, opinionated implementations on top of WCAG.' },
+  ];
+
+  const getPrompt = (frameworkId: string) => {
+      const framework = FRAMEWORKS.find(f => f.id === frameworkId);
+      const frameworkName = framework ? framework.name : 'WCAG 2.2 Level AA';
+      
+      return `You are an autonomous accessibility auditing agent.
+For each provided URL, perform a ${frameworkName} audit using both automated and heuristic analysis.
+
+Audit requirements
+	•	Detect violations across Perceivable, Operable, Understandable, Robust (POUR) or equivalent principles for the chosen standard.
+	•	Check: semantic HTML, heading order, landmarks, ARIA usage, color contrast, text resizing, focus order, keyboard navigation, visible focus states, skip links, form labels/errors, alt text quality, media captions, motion/animation preferences, touch target size, and screen-reader announcements.
+	•	Identify dynamic content issues (SPA routing, modals, toasts, accordions).
+	•	Flag false ARIA, redundant roles, and inaccessible custom components.
+    •   Specific focus: Apply the guidelines and success criteria specific to ${frameworkName}.
+
+Output requirements (strict)
+	•	Only report actual issues, not best-practice suggestions unless tied to a failure of the selected standard.
+	•	For each issue include:
+	•	Criterion/Guideline (e.g., 1.3.1 Info and Relationships or relevant section)
+	•	Severity (Critical / Major / Minor)
+	•	Affected element or pattern
+	•	Why it fails (assistive-tech impact)
+	•	Concrete fix (HTML/CSS/ARIA behavior, not vague advice)
+	•	Group issues by page section and component type.
+
+Fix guidance
+	•	Prefer native HTML over ARIA.
+	•	Provide minimal, production-ready remediation steps.
+	•	Note regressions or design tradeoffs when applicable.
+
+Completion
+	•	Return a summarized pass/fail verdict per URL.
+	•	Include a checklist of remaining manual tests (screen reader, keyboard-only, high-contrast mode).
+	•	Do not explain the process. Do not include navigation logs. Output findings only.`;
+  };
 
   const handleFindOwners = async (targetUrls: string[]) => {
     setIsFindingOwners(true);
@@ -44,6 +98,31 @@ export default function AutomationForm() {
         alert(`Failed to find owners: ${e.message}`);
     } finally {
         setIsFindingOwners(false);
+    }
+  };
+
+  const handleCreateScout = async (targetUrls: string[]) => {
+    setIsCreatingScout(true);
+    setCreateScoutResult(null);
+    try {
+        const response = await fetch('/api/create-scout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ urls: targetUrls })
+        });
+        
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.details || errData.error || "Unknown error");
+        }
+
+        const data = await response.json();
+        setCreateScoutResult(data);
+    } catch (e: any) {
+        console.error("Error creating scout:", e);
+        alert(`Failed to create scout: ${e.message}`);
+    } finally {
+        setIsCreatingScout(false);
     }
   };
 
@@ -76,6 +155,7 @@ export default function AutomationForm() {
   };
 
   const runConversion = async (log: string) => {
+      setStatusMessage("Generating report...");
       setOutput((prev) => prev + "\n\n--- Automation Complete. Converting output... ---\n");
       const foundScreenshots = extractScreenshotUrls(log);
       setScreenshots(foundScreenshots);
@@ -103,6 +183,7 @@ export default function AutomationForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setStatusMessage("Initializing...");
     setOutput('');
     setAnalysisResult(null);
     setTicketCreationResult(null);
@@ -124,6 +205,13 @@ export default function AutomationForm() {
 
     try {
       for (const targetUrl of urlList) {
+        try {
+          const hostname = new URL(targetUrl).hostname;
+          setStatusMessage(`Auditing ${hostname}...`);
+        } catch (e) {
+          setStatusMessage(`Auditing ${targetUrl}...`);
+        }
+        
         setOutput((prev) => prev + `\n\n--- Processing: ${targetUrl} ---\n`);
         let fullLog = "";
         
@@ -133,7 +221,7 @@ export default function AutomationForm() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ url: targetUrl, goal }),
+            body: JSON.stringify({ url: targetUrl, goal: getPrompt(selectedFramework) }),
           });
 
           if (!response.ok) {
@@ -199,9 +287,9 @@ export default function AutomationForm() {
 
   return (
     <div className="space-y-6">
+      {/* Automation Input Card */}
       <div className="bg-white/5 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] p-8 transition-all hover:border-white/30 relative overflow-hidden group">
-        {/* Glass sheen effect */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-50 pointer-events-none" />
+        <div className="absolute inset-0 bg-linear-to-br from-white/10 via-transparent to-transparent opacity-50 pointer-events-none" />
         
         <h2 className="text-xl font-medium mb-6 text-white/90 flex items-center gap-2 relative z-10">
           <span className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]"></span>
@@ -221,17 +309,33 @@ export default function AutomationForm() {
             />
             <p className="text-xs text-white/40">Separate multiple URLs with commas.</p>
           </div>
+
           <div className="space-y-2">
-            <label htmlFor="goal" className="block text-xs font-medium uppercase tracking-wider text-blue-200/70">Goal</label>
-            <textarea
-              id="goal"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              placeholder="Find all subscription plans and test accessibility..."
-              required
-              className="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl h-24 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all resize-none backdrop-blur-sm"
-            />
+            <label htmlFor="framework" className="block text-xs font-medium uppercase tracking-wider text-blue-200/70">Audit Framework</label>
+            <div className="relative">
+                <select
+                    id="framework"
+                    value={selectedFramework}
+                    onChange={(e) => setSelectedFramework(e.target.value)}
+                    className="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all backdrop-blur-sm cursor-pointer hover:bg-black/30"
+                >
+                    {FRAMEWORKS.map((f) => (
+                        <option key={f.id} value={f.id} className="bg-gray-900 text-white">
+                            {f.name}
+                        </option>
+                    ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-white/50">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+            <p className="text-xs text-white/40">
+                {FRAMEWORKS.find(f => f.id === selectedFramework)?.description}
+            </p>
           </div>
+
           <button
             type="submit"
             disabled={isLoading}
@@ -243,7 +347,7 @@ export default function AutomationForm() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Processing...
+                {statusMessage}
               </>
             ) : (
               'Run Automation'
@@ -252,9 +356,10 @@ export default function AutomationForm() {
         </form>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Find Site Owners (Research Task)</h2>
-        <div className="flex flex-col sm:flex-row gap-4">
+      {/* Find Site Owners Card */}
+      <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] p-8 transition-all hover:border-white/20 relative overflow-hidden group">
+        <h2 className="text-xl font-medium mb-4 text-white/90">Find Site Owners (Research Task)</h2>
+        <div className="flex flex-col sm:flex-row gap-4 relative z-10">
              <button
                 onClick={() => {
                     const urlList = urls.split(',').map(u => {
@@ -272,28 +377,28 @@ export default function AutomationForm() {
                     handleFindOwners(urlList);
                 }}
                 disabled={isFindingOwners}
-                className="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-4 py-2 rounded-md transition disabled:opacity-50"
+                className="bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/30 text-teal-100 font-medium px-6 py-2.5 rounded-xl transition disabled:opacity-50 flex-1"
             >
                 {isFindingOwners ? 'Finding...' : 'Find for Input URLs'}
             </button>
             <button
                 onClick={() => handleFindOwners(HARDCODED_URLS)}
                 disabled={isFindingOwners}
-                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-2 rounded-md transition disabled:opacity-50"
+                className="bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 font-medium px-6 py-2.5 rounded-xl transition disabled:opacity-50 flex-1"
             >
                 {isFindingOwners ? 'Finding...' : 'Find for Hardcoded Set'}
             </button>
         </div>
 
         {findOwnersResult && (
-            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700">
-                <h4 className="font-semibold mb-2 text-gray-800 dark:text-white">Research Task Initiated</h4>
-                <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                    <p>Status: <span className="font-medium text-blue-600 dark:text-blue-400">{findOwnersResult.status}</span></p>
-                    <p>Task ID: <span className="font-mono text-xs">{findOwnersResult.task_id}</span></p>
+            <div className="mt-4 p-4 bg-black/30 rounded-xl border border-white/10">
+                <h4 className="font-semibold mb-2 text-white">Research Task Initiated</h4>
+                <div className="space-y-1 text-sm text-gray-400">
+                    <p>Status: <span className="font-medium text-blue-400">{findOwnersResult.status}</span></p>
+                    <p>Task ID: <span className="font-mono text-xs opacity-70">{findOwnersResult.task_id}</span></p>
                 </div>
                 {findOwnersResult.view_url && (
-                    <a href={findOwnersResult.view_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                    <a href={findOwnersResult.view_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-blue-400 hover:text-blue-300 transition-colors font-medium">
                         View Research Progress →
                     </a>
                 )}
@@ -301,106 +406,176 @@ export default function AutomationForm() {
         )}
       </div>
 
+      {/* Create Scout Card */}
+      <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] p-8 transition-all hover:border-white/20 relative overflow-hidden group">
+        <h2 className="text-xl font-medium mb-4 text-white/90">Scout for Inaccessible URLs</h2>
+        <div className="flex flex-col sm:flex-row gap-4 relative z-10">
+             <button
+                onClick={() => {
+                    const urlList = urls.split(',').map(u => {
+                        let url = u.trim();
+                         if (url.length > 0 && !/^https?:\/\//i.test(url)) {
+                            url = 'https://' + url;
+                        }
+                        return url;
+                    }).filter(u => u.length > 0);
+                    
+                    if (urlList.length === 0) {
+                        alert("Please enter URLs in the input field above.");
+                        return;
+                    }
+                    handleCreateScout(urlList);
+                }}
+                disabled={isCreatingScout}
+                className="bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-100 font-medium px-6 py-2.5 rounded-xl transition disabled:opacity-50 flex-1"
+            >
+                {isCreatingScout ? 'Creating Scout...' : 'Create Scout for Input URLs'}
+            </button>
+        </div>
+
+        {createScoutResult && (
+            <div className="mt-4 p-4 bg-black/30 rounded-xl border border-white/10">
+                <h4 className="font-semibold mb-2 text-white">Scout Created Successfully</h4>
+                <div className="space-y-1 text-sm text-gray-400">
+                    <p>Scout ID: <span className="font-mono text-xs opacity-70">{createScoutResult.id}</span></p>
+                    <p>Query: <span className="italic text-gray-500">{createScoutResult.query}</span></p>
+                </div>
+                <a 
+                    href={createScoutResult.view_url || `https://scouts.yutori.com/${createScoutResult.id}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="inline-block mt-3 text-purple-400 hover:text-purple-300 transition-colors font-medium"
+                >
+                    View Scout Progress →
+                </a>
+            </div>
+        )}
+      </div>
+
+      {/* Output Console */}
       {output && (
-        <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl p-4 overflow-hidden flex flex-col h-125">
-          <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-4 px-2">
+        <div className={`bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl p-4 overflow-hidden flex flex-col transition-all duration-300 ${isOutputExpanded ? 'h-125' : 'h-16'}`}>
+          <div 
+            className="flex justify-between items-center mb-4 pb-0 cursor-pointer"
+            onClick={() => setIsOutputExpanded(!isOutputExpanded)}
+          >
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
               <h3 className="text-sm font-medium text-gray-300">Live Output Stream</h3>
+              <span className="text-xs text-white/30 ml-2">
+                {isOutputExpanded ? '(Click to collapse)' : '(Click to expand)'}
+              </span>
             </div>
-            <button 
-              onClick={() => setOutput('')}
-              className="text-xs text-gray-500 hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/10"
-            >
-              Clear
-            </button>
+            <div className="flex items-center gap-3">
+                <button 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setOutput('');
+                }}
+                className="text-xs text-gray-500 hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/10 z-10"
+                >
+                Clear
+                </button>
+                <svg 
+                    className={`w-5 h-5 text-gray-400 transform transition-transform duration-300 ${isOutputExpanded ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
           </div>
-          <pre 
-            ref={outputRef}
-            className="flex-1 overflow-auto text-gray-300 font-mono text-xs leading-relaxed whitespace-pre-wrap p-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
-          >
-            {output}
-          </pre>
+          {isOutputExpanded && (
+            <pre 
+                ref={outputRef}
+                className="flex-1 overflow-auto text-gray-300 font-mono text-xs leading-relaxed whitespace-pre-wrap p-2 border-t border-white/10 mt-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
+            >
+                {output}
+            </pre>
+          )}
         </div>
       )}
 
+      {/* Screenshots */}
       {screenshots.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 space-y-4">
-            <h3 className="text-xl font-bold text-gray-800 dark:text-white">Screenshots ({screenshots.length})</h3>
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 space-y-6">
+            <h3 className="text-xl font-medium text-white/90">Screenshots ({screenshots.length})</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {screenshots.map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block border rounded-md overflow-hidden hover:opacity-90 transition">
-                        <img src={url} alt={`Screenshot ${i + 1}`} className="w-full h-auto object-cover" />
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block border border-white/10 rounded-xl overflow-hidden hover:border-white/30 transition shadow-lg">
+                        <img src={url} alt={`Screenshot ${i + 1}`} className="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" />
                     </a>
                 ))}
             </div>
         </div>
       )}
 
+      {/* Analysis Results */}
       {analysisResult && (
-        <div className="bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-8 space-y-6 text-black">
-            <div className="flex items-center justify-between border-b border-gray-200 pb-6">
-              <h3 className="text-xl font-bold text-gray-900">Analysis Results</h3>
-              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Complete</span>
+        <div className="bg-black/60 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-8 space-y-6 text-white">
+            <div className="flex items-center justify-between border-b border-white/10 pb-6">
+              <h3 className="text-xl font-bold text-white">Analysis Results</h3>
+              <span className="px-3 py-1 bg-green-500/20 text-green-300 border border-green-500/30 rounded-full text-xs font-medium">Complete</span>
             </div>
             
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-100">
-                <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-3">Summary</h4>
-                <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
-                    {analysisResult.summary}
+            <div className="bg-white/5 p-6 rounded-xl border border-white/5">
+                <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-3">Summary</h4>
+                <div className="text-sm text-gray-300 leading-relaxed prose prose-invert max-w-none prose-p:leading-relaxed prose-li:marker:text-gray-500">
+                    <ReactMarkdown>{analysisResult.summary}</ReactMarkdown>
                 </div>
             </div>
 
             <div>
                 <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-500">Identified Issues ({analysisResult.tickets?.length || 0})</h4>
+                  <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Identified Issues ({analysisResult.tickets?.length || 0})</h4>
                 </div>
                 <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                     {analysisResult.tickets?.map((ticket, i) => (
-                        <div key={i} className="group p-4 border border-gray-200 rounded-xl bg-white hover:border-blue-300 hover:shadow-md transition-all duration-200">
+                        <div key={i} className="group p-4 border border-white/10 rounded-xl bg-white/5 hover:bg-white/10 hover:border-blue-400/50 transition-all duration-200">
                             <div className="flex justify-between items-start mb-2">
-                                <span className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{ticket.title}</span>
+                                <span className="font-medium text-white group-hover:text-blue-300 transition-colors">{ticket.title}</span>
                                 <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-full ${
-                                    ticket.priority === 'high' ? 'bg-red-100 text-red-700' :
-                                    ticket.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
-                                    'bg-blue-100 text-blue-700'
+                                    ticket.priority === 'high' ? 'bg-red-500/20 text-red-300 border border-red-500/30' :
+                                    ticket.priority === 'medium' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                                    'bg-blue-500/20 text-blue-300 border border-blue-500/30'
                                 }`}>
                                     {ticket.priority}
                                 </span>
                             </div>
-                            <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed">{ticket.description}</p>
+                            <p className="text-sm text-gray-400 line-clamp-2 leading-relaxed group-hover:text-gray-300">{ticket.description}</p>
                         </div>
                     ))}
                 </div>
 
-                <div className="mt-6 pt-6 border-t border-gray-100">
+                <div className="mt-6 pt-6 border-t border-white/10">
                   {!ticketCreationResult ? (
                       <button
                           onClick={handleCreateLinearTickets}
                           disabled={isCreatingTickets}
-                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-[0.99]"
+                          className="w-full bg-indigo-500 hover:bg-indigo-400 text-white px-6 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-indigo-500/25 active:scale-[0.99]"
                       >
                           {isCreatingTickets ? 'Creating Tickets...' : 'Export to Linear'}
                       </button>
                   ) : (
-                      <div className="p-4 bg-green-50 border border-green-200 rounded-xl animate-in fade-in slide-in-from-bottom-2">
+                      <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl animate-in fade-in slide-in-from-bottom-2">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="text-green-600">✓</span>
-                            <h5 className="font-bold text-green-800">Export Complete</h5>
+                            <span className="text-green-400">✓</span>
+                            <h5 className="font-bold text-green-300">Export Complete</h5>
                           </div>
-                          <p className="text-sm text-green-700 mb-3 ml-6">
+                          <p className="text-sm text-green-200/80 mb-3 ml-6">
                               Created tickets in team <strong>{ticketCreationResult.teamName}</strong>.
                           </p>
-                          <ul className="text-xs space-y-2 ml-6 text-green-600">
+                          <ul className="text-xs space-y-2 ml-6 text-green-300">
                               {ticketCreationResult.results?.map((res: any, i: number) => (
                                   <li key={i} className="flex items-center gap-2">
                                       {res.success ? (
                                           <a href={res.issue?.url} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-2 group">
-                                            <span className="font-mono bg-green-100 px-1.5 py-0.5 rounded text-green-800 group-hover:bg-green-200 transition-colors">{res.issue?.identifier}</span>
-                                            <span className="truncate max-w-xs">{res.title}</span>
+                                            <span className="font-mono bg-green-500/20 px-1.5 py-0.5 rounded text-green-300 group-hover:bg-green-500/30 transition-colors">{res.issue?.identifier}</span>
+                                            <span className="truncate max-w-xs text-green-200">{res.title}</span>
                                           </a>
                                       ) : (
-                                          <span className="text-red-500 flex items-center gap-2">
+                                          <span className="text-red-400 flex items-center gap-2">
                                             <span>✕</span> {res.title}
                                           </span>
                                       )}
