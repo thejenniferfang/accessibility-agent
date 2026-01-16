@@ -55,30 +55,38 @@ export default function GradientBackground() {
 
       void main() {
         vec2 st = gl_FragCoord.xy / u_resolution.xy;
-        float time = u_time * 0.2;
+        float time = u_time * 0.15;
         
-        // Fluid distortion
-        float noise1 = snoise(st * 3.0 + time);
-        float noise2 = snoise(st * 6.0 - time * 0.5);
+        // Smoother, larger folds (lower frequency noise)
+        float noise1 = snoise(st * 1.5 + vec2(time * 0.1, time * 0.2));
+        float noise2 = snoise(st * 2.5 - vec2(time * 0.15, time * 0.05));
         
-        vec2 distort = vec2(noise1, noise2) * 0.1;
+        // Warping domain
+        vec2 distort = vec2(noise1, noise2) * 0.2;
         
-        // Color gradients based on distorted UVs
-        vec3 color1 = vec3(0.02, 0.02, 0.05); // Dark background
-        vec3 color2 = vec3(0.1, 0.2, 0.4);    // Blue
-        vec3 color3 = vec3(0.0, 0.0, 0.0);    // Black
+        // Colors from reference: Azure Blue, Deep Blue, Black/Dark Navy, White Highlights
+        vec3 deepBlue = vec3(0.02, 0.05, 0.15);
+        vec3 azureBlue = vec3(0.15, 0.35, 0.7);
+        vec3 black = vec3(0.0, 0.0, 0.02);
+        vec3 highlight = vec3(0.4, 0.6, 0.8);
         
-        float mix1 = snoise(st * 1.5 + distort + time * 0.5);
-        float mix2 = snoise(st * 2.5 - distort - time * 0.3);
+        // Create "folds" using sine waves heavily distorted by noise
+        float fold = sin(st.x * 4.0 + st.y * 3.0 + distort.x * 3.0 + time);
+        float fold2 = cos(st.x * 2.0 - st.y * 5.0 + distort.y * 3.0 - time * 0.5);
         
-        vec3 finalColor = mix(color1, color2, smoothstep(-1.0, 1.0, mix1));
-        finalColor = mix(finalColor, color3, smoothstep(-0.5, 0.5, mix2));
+        // Mixing logic
+        vec3 color = mix(black, deepBlue, smoothstep(-1.0, 1.0, fold));
+        color = mix(color, azureBlue, smoothstep(-0.5, 0.8, fold2));
         
-        // Vignette
+        // Add specular-like highlights for the "silk" look
+        float spec = smoothstep(0.8, 0.95, fold * fold2);
+        color += highlight * spec * 0.4;
+        
+        // Subtle vignette
         float dist = distance(st, vec2(0.5));
-        finalColor *= 1.0 - dist * 0.5;
+        color *= 1.2 - dist * 0.6;
         
-        gl_FragColor = vec4(finalColor, 1.0);
+        gl_FragColor = vec4(color, 1.0);
       }
     `;
 
