@@ -152,11 +152,14 @@ export default function AutomationForm() {
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Mino Automation Tester</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="urls" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Target URL(s)</label>
+      <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-8 transition-all hover:border-white/20">
+        <h2 className="text-xl font-medium mb-6 text-white/90 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+          New Automation
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label htmlFor="urls" className="block text-xs font-medium uppercase tracking-wider text-gray-400">Target URL(s)</label>
             <input
               id="urls"
               type="text"
@@ -164,29 +167,29 @@ export default function AutomationForm() {
               onChange={(e) => setUrls(e.target.value)}
               placeholder="https://example.com, https://another.com"
               required
-              className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
             />
-            <p className="text-xs text-gray-500 mt-1">Separate multiple URLs with commas.</p>
+            <p className="text-xs text-gray-500">Separate multiple URLs with commas.</p>
           </div>
-          <div>
-            <label htmlFor="goal" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Goal</label>
+          <div className="space-y-2">
+            <label htmlFor="goal" className="block text-xs font-medium uppercase tracking-wider text-gray-400">Goal</label>
             <textarea
               id="goal"
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
-              placeholder="Find all subscription plans..."
+              placeholder="Find all subscription plans and test accessibility..."
               required
-              className="w-full p-2 border rounded-md h-32 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg h-32 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all resize-none"
             />
           </div>
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-white text-black hover:bg-gray-200 font-medium px-6 py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform active:scale-[0.98]"
           >
             {isLoading ? (
               <>
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -200,19 +203,22 @@ export default function AutomationForm() {
       </div>
 
       {output && (
-        <div className="bg-gray-900 rounded-lg shadow-md p-4 overflow-hidden flex flex-col h-125">
-          <div className="flex justify-between items-center mb-2 border-b border-gray-700 pb-2">
-            <h3 className="font-semibold text-gray-300">Output Stream</h3>
+        <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl p-4 overflow-hidden flex flex-col h-125">
+          <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-4 px-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              <h3 className="text-sm font-medium text-gray-300">Live Output Stream</h3>
+            </div>
             <button 
               onClick={() => setOutput('')}
-              className="text-xs text-gray-400 hover:text-white"
+              className="text-xs text-gray-500 hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/10"
             >
               Clear
             </button>
           </div>
           <pre 
             ref={outputRef}
-            className="flex-1 overflow-auto text-green-400 font-mono text-sm whitespace-pre-wrap p-2"
+            className="flex-1 overflow-auto text-gray-300 font-mono text-xs leading-relaxed whitespace-pre-wrap p-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
           >
             {output}
           </pre>
@@ -220,63 +226,78 @@ export default function AutomationForm() {
       )}
 
       {analysisResult && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 space-y-4">
-            <h3 className="text-xl font-bold text-gray-800 dark:text-white">Analysis Result</h3>
+        <div className="bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-8 space-y-6 text-black">
+            <div className="flex items-center justify-between border-b border-gray-200 pb-6">
+              <h3 className="text-xl font-bold text-gray-900">Analysis Results</h3>
+              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Complete</span>
+            </div>
             
-            <div className="prose dark:prose-invert max-w-none bg-gray-50 dark:bg-gray-900 p-4 rounded-md">
-                <h4 className="font-semibold">Summary</h4>
-                <div className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-100">
+                <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-3">Summary</h4>
+                <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
                     {analysisResult.summary}
                 </div>
             </div>
 
             <div>
-                <h4 className="font-semibold text-gray-800 dark:text-white mb-2">Identify Issues ({analysisResult.tickets?.length || 0})</h4>
-                <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-500">Identified Issues ({analysisResult.tickets?.length || 0})</h4>
+                </div>
+                <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                     {analysisResult.tickets?.map((ticket, i) => (
-                        <div key={i} className="p-3 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                            <div className="flex justify-between items-start">
-                                <span className="font-medium text-sm">{ticket.title}</span>
-                                <span className={`text-xs px-2 py-1 rounded-full ${
-                                    ticket.priority === 'high' ? 'bg-red-100 text-red-800' :
-                                    ticket.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-blue-100 text-blue-800'
+                        <div key={i} className="group p-4 border border-gray-200 rounded-xl bg-white hover:border-blue-300 hover:shadow-md transition-all duration-200">
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{ticket.title}</span>
+                                <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-full ${
+                                    ticket.priority === 'high' ? 'bg-red-100 text-red-700' :
+                                    ticket.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
+                                    'bg-blue-100 text-blue-700'
                                 }`}>
                                     {ticket.priority}
                                 </span>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{ticket.description}</p>
+                            <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed">{ticket.description}</p>
                         </div>
                     ))}
                 </div>
 
-                {!ticketCreationResult ? (
-                    <button
-                        onClick={handleCreateLinearTickets}
-                        disabled={isCreatingTickets}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium text-sm flex items-center gap-2 transition"
-                    >
-                        {isCreatingTickets ? 'Creating...' : 'Export to Linear'}
-                    </button>
-                ) : (
-                    <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                        <h5 className="font-bold text-green-800 dark:text-green-400 mb-2">Export Complete</h5>
-                        <p className="text-sm text-green-700 dark:text-green-300 mb-2">
-                            Created tickets in team <strong>{ticketCreationResult.teamName}</strong>.
-                        </p>
-                        <ul className="text-xs space-y-1 text-green-600 dark:text-green-400">
-                            {ticketCreationResult.results?.map((res: any, i: number) => (
-                                <li key={i} className="flex items-center gap-2">
-                                    {res.success ? (
-                                        <span>✅ <a href={res.issue?.url} target="_blank" rel="noopener noreferrer" className="underline">{res.issue?.identifier}</a> {res.title}</span>
-                                    ) : (
-                                        <span className="text-red-500">❌ {res.title} ({res.error})</span>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  {!ticketCreationResult ? (
+                      <button
+                          onClick={handleCreateLinearTickets}
+                          disabled={isCreatingTickets}
+                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-[0.99]"
+                      >
+                          {isCreatingTickets ? 'Creating Tickets...' : 'Export to Linear'}
+                      </button>
+                  ) : (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-xl animate-in fade-in slide-in-from-bottom-2">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-green-600">✓</span>
+                            <h5 className="font-bold text-green-800">Export Complete</h5>
+                          </div>
+                          <p className="text-sm text-green-700 mb-3 ml-6">
+                              Created tickets in team <strong>{ticketCreationResult.teamName}</strong>.
+                          </p>
+                          <ul className="text-xs space-y-2 ml-6 text-green-600">
+                              {ticketCreationResult.results?.map((res: any, i: number) => (
+                                  <li key={i} className="flex items-center gap-2">
+                                      {res.success ? (
+                                          <a href={res.issue?.url} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-2 group">
+                                            <span className="font-mono bg-green-100 px-1.5 py-0.5 rounded text-green-800 group-hover:bg-green-200 transition-colors">{res.issue?.identifier}</span>
+                                            <span className="truncate max-w-xs">{res.title}</span>
+                                          </a>
+                                      ) : (
+                                          <span className="text-red-500 flex items-center gap-2">
+                                            <span>✕</span> {res.title}
+                                          </span>
+                                      )}
+                                  </li>
+                              ))}
+                          </ul>
+                      </div>
+                  )}
+                </div>
             </div>
         </div>
       )}
