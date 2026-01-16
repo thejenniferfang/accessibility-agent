@@ -1,0 +1,30 @@
+{
+  "run_id": "poll-1768602599811",
+  "generated_at": "2026-01-16T22:29:59.811Z",
+  "seed": {
+    "query": "scout:aa59c960-5be7-457e-b654-409551ffc4aa",
+    "sources": [
+      "yutori_scout"
+    ]
+  },
+  "sites": [
+    {
+      "site_id": "scout-1768602085880-pgyr0",
+      "name": "Unknown Startup",
+      "url": "https://example.com/missing-url",
+      "source": "yutori_scout_api",
+      "confidence": 1,
+      "contact_hint": {},
+      "ui_analysis": {
+        "problems": [],
+        "severity": "Medium",
+        "quick_fix": "Check accessibility guidelines.",
+        "conversion_impact": "Unknown"
+      },
+      "notes": "Found via daily scout."
+    }
+  ],
+  "metadata": {
+    "source_mode": "REAL_SCOUT_API"
+  }
+}
