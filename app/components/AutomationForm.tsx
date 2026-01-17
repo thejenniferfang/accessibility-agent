@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 
 import ReactMarkdown from 'react-markdown';
+import SitemapBuilderModal from './SitemapBuilderModal';
 
 export default function AutomationForm() {
   const [urls, setUrls] = useState('');
@@ -25,6 +26,7 @@ export default function AutomationForm() {
   
   const [lastLog, setLastLog] = useState<string>('');
   const [expandedTickets, setExpandedTickets] = useState<Set<number>>(new Set());
+  const [agent, setAgent] = useState<'tinyfish' | 'yutori'>('tinyfish');
 
   const HARDCODED_URLS = [
     'https://www.w3.org/WAI/',
@@ -157,6 +159,47 @@ Completion
     return Array.from(foundUrls);
   };
 
+  const pollYutoriTask = async (taskId: string, targetUrl: string) => {
+    const maxAttempts = 120; // 6 minutes (3s * 120)
+    let attempts = 0;
+    
+    return new Promise<string>((resolve, reject) => {
+      const poll = async () => {
+        try {
+          const response = await fetch(`/api/yutori-browser-agent/${taskId}`);
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.details || data.error || 'Failed to fetch task status');
+          }
+
+          if (data.status === 'succeeded' || data.status === 'completed') {
+            resolve(data.result || '');
+            return;
+          }
+
+          if (data.status === 'failed') {
+            reject(new Error('Yutori task failed'));
+            return;
+          }
+
+          setStatusMessage(`Auditing ${new URL(targetUrl).hostname}... (${data.status})`);
+
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 3000);
+          } else {
+            reject(new Error('Task timed out'));
+          }
+        } catch (err: any) {
+          reject(err);
+        }
+      };
+      
+      poll();
+    });
+  };
+
   const runConversion = async (log: string) => {
       setStatusMessage("Generating report...");
       setOutput((prev) => prev + "\n\n--- Automation Complete. Converting output... ---\n");
@@ -216,39 +259,73 @@ Completion
           setStatusMessage(`Auditing ${targetUrl}...`);
         }
         
-        setOutput((prev) => prev + `\n\n--- Processing: ${targetUrl} ---\n`);
+        setOutput((prev) => prev + `\n\n--- Processing: ${targetUrl} (${agent}) ---\n`);
         let fullLog = "";
         
         try {
-          const response = await fetch('/api/run-automation', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ url: targetUrl, goal: getPrompt(selectedFramework) }),
-          });
+          if (agent === 'tinyfish') {
+            const response = await fetch('/api/run-automation', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ url: targetUrl, goal: getPrompt(selectedFramework) }),
+            });
 
-          if (!response.ok) {
+            if (!response.ok) {
+              const data = await response.json();
+              throw new Error(data.details || data.error || `Error: ${response.statusText}`);
+            }
+
+            if (!response.body) {
+                setOutput((prev) => prev + "\nNo response body received.");
+                continue;
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              
+              // Decode and append the chunk
+              const chunk = decoder.decode(value, { stream: true });
+              fullLog += chunk;
+              setOutput((prev) => prev + chunk);
+            }
+          } else {
+            // Yutori Agent
+            const response = await fetch('/api/yutori-browser-agent', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ urls: [targetUrl], goal: getPrompt(selectedFramework) })
+            });
+
             const data = await response.json();
-            throw new Error(data.details || data.error || `Error: ${response.statusText}`);
-          }
 
-          if (!response.body) {
-              setOutput((prev) => prev + "\nNo response body received.");
-              continue;
-          }
+            if (!response.ok) {
+              throw new Error(data.details || data.error || 'Failed to create Yutori task');
+            }
 
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder();
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+            if (data.tasks && data.tasks.length > 0) {
+               const createdTask = data.tasks[0];
+               if (createdTask.id || createdTask.task_id) {
+                 // Poll for result
+                 const result = await pollYutoriTask(createdTask.id || createdTask.task_id, targetUrl);
+                 fullLog = result;
+                 setOutput((prev) => prev + result);
+               } else if (createdTask.status === 'succeeded') {
+                 fullLog = createdTask.result || '';
+                 setOutput((prev) => prev + fullLog);
+               }
+            } else {
+               throw new Error('No Yutori task created');
+            }
             
-            // Decode and append the chunk
-            const chunk = decoder.decode(value, { stream: true });
-            fullLog += chunk;
-            setOutput((prev) => prev + chunk);
+            if (data.errors && data.errors.length > 0) {
+               throw new Error(data.errors[0].error || 'Yutori task creation error');
+            }
           }
 
           // Force conversion at the end of the stream regardless of "status: complete" text
@@ -337,6 +414,9 @@ Completion
         )}
       </div>
 
+      {/* Sitemap Builder Modal */}
+      <SitemapBuilderModal />
+
       {/* Automation Input Card */}
       <div className="bg-white/5 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] p-8 transition-all hover:border-white/30 relative overflow-hidden group">
         <div className="absolute inset-0 bg-linear-to-br from-white/10 via-transparent to-transparent opacity-50 pointer-events-none" />
@@ -357,7 +437,17 @@ Completion
               required
               className="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all backdrop-blur-sm"
             />
-            <p className="text-xs text-white/40">Separate multiple URLs with commas.</p>
+            <div className="flex justify-between items-center">
+              <p className="text-xs text-white/40">Separate multiple URLs with commas.</p>
+              <button
+                type="button"
+                onClick={() => setAgent(prev => prev === 'yutori' ? 'tinyfish' : 'yutori')}
+                className={`w-10 h-6 rounded-full transition-colors relative focus:outline-none ${agent === 'tinyfish' ? 'bg-purple-500/50' : 'bg-white/10'}`}
+                title="Toggle Agent"
+              >
+                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${agent === 'tinyfish' ? 'translate-x-5' : 'translate-x-1'}`} />
+              </button>
+            </div>
           </div>
 
           <div className="space-y-2">
