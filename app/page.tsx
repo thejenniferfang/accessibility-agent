@@ -24,10 +24,10 @@ export default function Home() {
             </div>
           </div>
         </div>
-        
         <div className="w-full max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-backwards">
           <AutomationForm />
         </div>
+        
       </main>
     </div>
   );
