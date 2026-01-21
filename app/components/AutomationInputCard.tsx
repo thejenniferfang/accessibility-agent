@@ -209,7 +209,7 @@ export default function AutomationInputCard({
                     />
                     <div className="flex-1">
                       <label htmlFor="build-sitemap-dropdown" className="text-sm font-medium text-gray-900 cursor-pointer block">
-                        Build sitemap first (optional)
+                        Build sitemap first
                       </label>
                       <p className="text-xs text-gray-600 mt-1">
                         Automatically discover all public pages before auditing. <span className="font-semibold text-amber-700">Adds 2-3 minutes to processing time.</span>
@@ -234,7 +234,7 @@ export default function AutomationInputCard({
                       />
                       <div className="flex-1">
                         <label htmlFor="find-site-owners-dropdown" className="text-sm font-medium text-gray-900 cursor-pointer block">
-                          Find site owners (optional)
+                          Find site owners
                         </label>
                         <p className="text-xs text-gray-600 mt-1">
                           Research and find contact information for accessibility owners. <span className="font-semibold text-teal-700">Runs in parallel with audit.</span>
