@@ -250,14 +250,18 @@ export default function SitemapBuilderModal() {
         
         <div className="flex justify-between items-center">
           <p className="text-xs text-white/40">Enter the base URL to generate a sitemap from all public subpages.</p>
-          <button
-            type="button"
-            onClick={() => setAgent(prev => prev === 'yutori' ? 'tinyfish' : 'yutori')}
-            className={`w-10 h-6 rounded-full transition-colors relative focus:outline-none ${agent === 'tinyfish' ? 'bg-purple-500/50' : 'bg-white/10'}`}
-            title="Toggle Agent"
-          >
-            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${agent === 'tinyfish' ? 'translate-x-5' : 'translate-x-1'}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-medium transition-colors ${agent === 'yutori' ? 'text-white' : 'text-white/40'}`}>Yutori</span>
+            <button
+              type="button"
+              onClick={() => setAgent(prev => prev === 'yutori' ? 'tinyfish' : 'yutori')}
+              className={`w-10 h-6 rounded-full transition-colors relative focus:outline-none ${agent === 'tinyfish' ? 'bg-purple-500/50' : 'bg-white/10'}`}
+              title="Toggle Agent"
+            >
+              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${agent === 'tinyfish' ? 'translate-x-5' : 'translate-x-1'}`} />
+            </button>
+            <span className={`text-xs font-medium transition-colors ${agent === 'tinyfish' ? 'text-white' : 'text-white/40'}`}>TinyFish</span>
+          </div>
         </div>
 
         {error && (

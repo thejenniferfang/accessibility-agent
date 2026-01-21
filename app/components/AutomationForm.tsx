@@ -106,14 +106,13 @@ Completion
     }
   };
 
-  const handleCreateScout = async (targetUrls: string[]) => {
+  const handleCreateScout = async () => {
     setIsCreatingScout(true);
     setCreateScoutResult(null);
     try {
         const response = await fetch('/api/create-scout', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ urls: targetUrls })
+            headers: { 'Content-Type': 'application/json' }
         });
         
         if (!response.ok) {
@@ -373,25 +372,11 @@ Completion
         <h2 className="text-xl font-medium mb-4 text-white/90">Scout for Inaccessible URLs</h2>
         <div className="flex flex-col sm:flex-row gap-4 relative z-10">
              <button
-                onClick={() => {
-                    const urlList = urls.split(',').map(u => {
-                        let url = u.trim();
-                         if (url.length > 0 && !/^https?:\/\//i.test(url)) {
-                            url = 'https://' + url;
-                        }
-                        return url;
-                    }).filter(u => u.length > 0);
-                    
-                    if (urlList.length === 0) {
-                        alert("Please enter URLs in the input field.");
-                        return;
-                    }
-                    handleCreateScout(urlList);
-                }}
+                onClick={handleCreateScout}
                 disabled={isCreatingScout}
                 className="bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-100 font-medium px-6 py-2.5 rounded-xl transition disabled:opacity-50 flex-1"
             >
-                {isCreatingScout ? 'Creating Scout...' : 'Create Scout for Input URLs'}
+                {isCreatingScout ? 'Creating Scout...' : 'Create Scout'}
             </button>
         </div>
 
@@ -439,14 +424,18 @@ Completion
             />
             <div className="flex justify-between items-center">
               <p className="text-xs text-white/40">Separate multiple URLs with commas.</p>
-              <button
-                type="button"
-                onClick={() => setAgent(prev => prev === 'yutori' ? 'tinyfish' : 'yutori')}
-                className={`w-10 h-6 rounded-full transition-colors relative focus:outline-none ${agent === 'tinyfish' ? 'bg-purple-500/50' : 'bg-white/10'}`}
-                title="Toggle Agent"
-              >
-                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${agent === 'tinyfish' ? 'translate-x-5' : 'translate-x-1'}`} />
-              </button>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-medium transition-colors ${agent === 'yutori' ? 'text-white' : 'text-white/40'}`}>Yutori</span>
+                <button
+                  type="button"
+                  onClick={() => setAgent(prev => prev === 'yutori' ? 'tinyfish' : 'yutori')}
+                  className={`w-10 h-6 rounded-full transition-colors relative focus:outline-none ${agent === 'tinyfish' ? 'bg-purple-500/50' : 'bg-white/10'}`}
+                  title="Toggle Agent"
+                >
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${agent === 'tinyfish' ? 'translate-x-5' : 'translate-x-1'}`} />
+                </button>
+                <span className={`text-xs font-medium transition-colors ${agent === 'tinyfish' ? 'text-white' : 'text-white/40'}`}>Tinyfish</span>
+              </div>
             </div>
           </div>
 

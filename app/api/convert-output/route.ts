@@ -14,15 +14,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "OPENAI_API_KEY is not set" }, { status: 500 });
     }
 
-    const { screenshotUrl, screenshotUrls, automationLog } = await req.json();
-    console.log("Input Body:", JSON.stringify({ screenshotUrl, screenshotUrls, automationLog }, null, 2));
+    const { screenshotUrl, screenshotUrls, automationLog, url } = await req.json();
+    console.log("Input Body:", JSON.stringify({ screenshotUrl, screenshotUrls, automationLog, url }, null, 2));
 
     const urls = screenshotUrls || (screenshotUrl ? [screenshotUrl] : []);
+    
+    const urlContext = url ? `\n\nThis analysis is for the URL: ${url}` : '';
     
     const content: any[] = [
       {
         type: "text",
-        text: `Here is the log from the automation run:\n\n${automationLog}\n\nPlease analyze this output.
+        text: `Here is the log from the automation run:\n\n${automationLog}${urlContext}\n\nPlease analyze this output.
 
         Do not include any introductory text. Just the findings.
         
