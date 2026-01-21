@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     description: "Automated accessibility testing and auditing tool powered by AI. Test your websites for WCAG compliance, generate sitemaps, and create accessibility reports.",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "/openGraph.png",
         width: 1200,
         height: 630,
         alt: "Access AI - Automated Accessibility Testing",
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Access AI - Automated Accessibility Testing",
     description: "Automated accessibility testing and auditing tool powered by AI. Test your websites for WCAG compliance and generate accessibility reports.",
-    images: ["/og-image.jpg"],
+    images: ["/openGraph.png"],
     creator: "@accessai",
   },
   robots: {
@@ -77,21 +77,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
-      { url: "/icon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/icon-32x32.png", sizes: "32x32", type: "image/png" },
-    ],
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-    ],
-    other: [
-      {
-        rel: "mask-icon",
-        url: "/safari-pinned-tab.svg",
-        color: "#000000",
-      },
     ],
   },
-  manifest: "/site.webmanifest",
   viewport: {
     width: "device-width",
     initialScale: 1,
