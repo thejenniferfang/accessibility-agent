@@ -46,7 +46,7 @@ export default function TypewriterLoop() {
 
   return (
     <div className="h-8 flex items-center justify-center">
-      <span className="text-xl md:text-2xl text-white font-light tracking-wide">
+      <span className="text-xl md:text-2xl text-gray-700 font-light tracking-wide">
         {displayText}
         <span className="animate-pulse ml-1">|</span>
       </span>

@@ -57,7 +57,7 @@ export default function InteractiveEyes() {
       {/* Eye 1 */}
       <div 
         ref={eye1Ref}
-        className="w-8 h-12 bg-white rounded-[20px] flex items-center justify-center overflow-hidden relative shadow-[0_0_8px_rgba(255,255,255,0.2)]"
+        className="w-8 h-12 bg-white rounded-[20px] flex items-center justify-center overflow-hidden relative"
       >
         <div 
           className="w-4 h-6 bg-black rounded-[50%] absolute"
@@ -72,7 +72,7 @@ export default function InteractiveEyes() {
       {/* Eye 2 */}
       <div 
         ref={eye2Ref}
-        className="w-8 h-12 bg-white rounded-[20px] flex items-center justify-center overflow-hidden relative shadow-[0_0_8px_rgba(255,255,255,0.2)]"
+        className="w-8 h-12 bg-white rounded-[20px] flex items-center justify-center overflow-hidden relative"
       >
         <div 
           className="w-4 h-6 bg-black rounded-full absolute"

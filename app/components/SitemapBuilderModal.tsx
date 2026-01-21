@@ -225,15 +225,15 @@ export default function SitemapBuilderModal() {
   };
 
   return (
-    <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] p-8 transition-all hover:border-white/20 relative overflow-hidden group">
-      <h2 className="text-xl font-medium mb-6 text-white/90 flex items-center gap-2 relative z-10">
-        <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)]"></span>
+    <div className="bg-white border border-gray-200 rounded-3xl p-8 transition-all relative overflow-hidden group">
+      <h2 className="text-xl font-medium mb-6 text-gray-900 flex items-center gap-2 relative z-10">
+        <span className="w-2 h-2 rounded-full bg-green-500"></span>
         Build Sitemap
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
         <div className="space-y-2">
-          <label htmlFor="sitemap-url" className="block text-xs font-medium uppercase tracking-wider text-green-200/70">
+          <label htmlFor="sitemap-url" className="block text-xs font-medium uppercase tracking-wider text-gray-600">
             Target URL
           </label>
           <input
@@ -244,28 +244,28 @@ export default function SitemapBuilderModal() {
             placeholder="https://example.com"
             required
             disabled={isLoading}
-            className="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-transparent transition-all backdrop-blur-sm disabled:opacity-50"
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all disabled:opacity-50"
           />
         </div>
         
         <div className="flex justify-between items-center">
-          <p className="text-xs text-white/40">Enter the base URL to generate a sitemap from all public subpages.</p>
+          <p className="text-xs text-gray-500">Enter the base URL to generate a sitemap from all public subpages.</p>
           <div className="flex items-center gap-2">
-            <span className={`text-xs font-medium transition-colors ${agent === 'yutori' ? 'text-white' : 'text-white/40'}`}>Yutori</span>
+            <span className={`text-xs font-medium transition-colors ${agent === 'yutori' ? 'text-gray-900' : 'text-gray-400'}`}>Yutori</span>
             <button
               type="button"
               onClick={() => setAgent(prev => prev === 'yutori' ? 'tinyfish' : 'yutori')}
-              className={`w-10 h-6 rounded-full transition-colors relative focus:outline-none ${agent === 'tinyfish' ? 'bg-purple-500/50' : 'bg-white/10'}`}
+              className={`w-10 h-6 rounded-full transition-colors relative focus:outline-none ${agent === 'tinyfish' ? 'bg-purple-500' : 'bg-gray-300'}`}
               title="Toggle Agent"
             >
-              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${agent === 'tinyfish' ? 'translate-x-5' : 'translate-x-1'}`} />
+              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ease-in-out ${agent === 'tinyfish' ? 'translate-x-5' : 'translate-x-1'}`} />
             </button>
-            <span className={`text-xs font-medium transition-colors ${agent === 'tinyfish' ? 'text-white' : 'text-white/40'}`}>TinyFish</span>
+            <span className={`text-xs font-medium transition-colors ${agent === 'tinyfish' ? 'text-gray-900' : 'text-gray-400'}`}>TinyFish</span>
           </div>
         </div>
 
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl text-sm">
+          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
             {error}
           </div>
         )}
@@ -274,7 +274,7 @@ export default function SitemapBuilderModal() {
           <button
             type="submit"
             disabled={isLoading}
-            className="flex-1 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-100 font-medium px-6 py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium px-6 py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
@@ -293,7 +293,7 @@ export default function SitemapBuilderModal() {
             <button
               type="button"
               onClick={handleReset}
-              className="bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 font-medium px-6 py-3 rounded-xl transition"
+              className="bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 font-medium px-6 py-3 rounded-xl transition"
             >
               Reset
             </button>
@@ -302,22 +302,22 @@ export default function SitemapBuilderModal() {
       </form>
 
       {task && (
-        <div className="mt-6 p-4 bg-black/30 rounded-xl border border-white/10">
+        <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
           <div className="flex justify-between items-center mb-2">
-            <h4 className="font-semibold text-white">Task Status ({agent})</h4>
+            <h4 className="font-semibold text-gray-900">Task Status ({agent})</h4>
             <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-              task.status === 'succeeded' || task.status === 'completed' ? 'bg-green-500/20 text-green-300 border border-green-500/30' :
-              task.status === 'failed' ? 'bg-red-500/20 text-red-300 border border-red-500/30' :
-              'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+              task.status === 'succeeded' || task.status === 'completed' ? 'bg-green-100 text-green-700 border border-green-200' :
+              task.status === 'failed' ? 'bg-red-100 text-red-700 border border-red-200' :
+              'bg-blue-100 text-blue-700 border border-blue-200'
             }`}>
               {task.status}
             </span>
           </div>
           
-          <div className="space-y-1 text-sm text-gray-400 mb-3">
-            <p>URL: <span className="text-white/70">{task.url}</span></p>
+          <div className="space-y-1 text-sm text-gray-600 mb-3">
+            <p>URL: <span className="text-gray-900">{task.url}</span></p>
             {(task.id || task.task_id) && (
-              <p>Task ID: <span className="font-mono text-xs opacity-70">{task.id || task.task_id}</span></p>
+              <p>Task ID: <span className="font-mono text-xs text-gray-500">{task.id || task.task_id}</span></p>
             )}
           </div>
 
@@ -326,7 +326,7 @@ export default function SitemapBuilderModal() {
               href={task.view_url} 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="inline-block text-green-400 hover:text-green-300 transition-colors font-medium text-sm"
+              className="inline-block text-green-600 hover:text-green-700 transition-colors font-medium text-sm"
             >
               View Live Session →
             </a>
@@ -335,10 +335,10 @@ export default function SitemapBuilderModal() {
       )}
 
       {agent === 'tinyfish' && streamOutput && !sitemapResult && (
-        <div className="mt-6 p-4 bg-black/30 rounded-xl border border-white/10">
-          <h4 className="font-semibold text-white mb-2">Stream Output</h4>
-          <div className="bg-black/30 rounded-lg p-3 border border-white/5 max-h-48 overflow-auto">
-            <pre className="text-xs text-gray-400 whitespace-pre-wrap wrap-break-word font-mono">
+        <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+          <h4 className="font-semibold text-gray-900 mb-2">Stream Output</h4>
+          <div className="bg-white rounded-lg p-3 border border-gray-200 max-h-48 overflow-auto">
+            <pre className="text-xs text-gray-700 whitespace-pre-wrap wrap-break-word font-mono">
               {streamOutput}
             </pre>
           </div>
@@ -346,9 +346,9 @@ export default function SitemapBuilderModal() {
       )}
 
       {sitemapResult && (
-        <div className="mt-6 p-6 bg-black/40 rounded-xl border border-white/10">
+        <div className="mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200">
           <div className="flex justify-between items-center mb-4">
-            <h4 className="font-semibold text-white">Sitemap Results</h4>
+            <h4 className="font-semibold text-gray-900">Sitemap Results</h4>
             <button
               onClick={async () => {
                 try {
@@ -359,14 +359,14 @@ export default function SitemapBuilderModal() {
                   console.error('Failed to copy:', err);
                 }
               }}
-              className="flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10 border border-white/10 hover:border-white/20"
+              className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 transition-colors px-4 py-2 rounded-lg hover:bg-gray-100 border border-gray-300 hover:border-gray-400"
             >
               {copied ? (
                 <>
-                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-green-400">Copied!</span>
+                  <span className="text-green-600">Copied!</span>
                 </>
               ) : (
                 <>
@@ -379,13 +379,13 @@ export default function SitemapBuilderModal() {
             </button>
           </div>
           
-          <div className="bg-black/30 rounded-lg p-4 border border-white/5 max-h-96 overflow-auto">
-            <pre className="text-sm text-gray-300 whitespace-pre-wrap wrap-break-word font-mono">
+          <div className="bg-white rounded-lg p-4 border border-gray-200 max-h-96 overflow-auto">
+            <pre className="text-sm text-gray-700 whitespace-pre-wrap wrap-break-word font-mono">
               {sitemapResult}
             </pre>
           </div>
 
-          <div className="mt-4 text-xs text-white/50">
+          <div className="mt-4 text-xs text-gray-600">
             <p>Found {sitemapResult.split(',').length} page{sitemapResult.split(',').length !== 1 ? 's' : ''}</p>
           </div>
         </div>
