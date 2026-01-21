@@ -1,42 +1,146 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-import SitemapBuilderModal from './SitemapBuilderModal';
 import CreateScoutCard from './CreateScoutCard';
 import AutomationInputCard from './AutomationInputCard';
-import FindSiteOwnersCard from './FindSiteOwnersCard';
-import OutputConsole from './OutputConsole';
-import ScreenshotsCard from './ScreenshotsCard';
-import AnalysisResultsCard from './AnalysisResultsCard';
+import AuditSidePanel from './AuditSidePanel';
 
-export default function AutomationForm() {
+interface AuditSession {
+  type: 'audit';
+  id: string;
+  urls: string[];
+  framework: string;
+  agent: 'tinyfish' | 'yutori';
+  output: string;
+  statusMessage: string;
+  isLoading: boolean;
+  analysisResult: { summary: string; tickets: any[] } | null;
+  screenshots: string[];
+  lastLog: string;
+  expandedTickets: Set<string>;
+  ticketCreationResult: any;
+  isCreatingTickets: boolean;
+  createdAt: Date;
+  taskIds: Array<{ url: string; taskId: string }>; // Track job IDs for resuming
+}
+
+interface ScoutSession {
+  type: 'scout';
+  id: string;
+  scoutId: string;
+  query: string;
+  viewUrl: string;
+  createdAt: Date;
+}
+
+type Session = AuditSession | ScoutSession;
+
+interface AutomationFormProps {
+  isPanelOpen?: boolean;
+  onPanelToggle?: (isOpen: boolean) => void;
+}
+
+const STORAGE_KEY = 'accessibility-audit-sessions';
+
+// Helper functions for localStorage
+const saveSessionsToStorage = (sessions: Session[]) => {
+  try {
+    const serializable = sessions.map(session => {
+      if (session.type === 'audit') {
+        return {
+          ...session,
+          expandedTickets: Array.from(session.expandedTickets || []),
+          createdAt: session.createdAt.toISOString(),
+        };
+      } else {
+        return {
+          ...session,
+          createdAt: session.createdAt.toISOString(),
+        };
+      }
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
+  } catch (error) {
+    console.error('Failed to save sessions to localStorage:', error);
+  }
+};
+
+const loadSessionsFromStorage = (): Session[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return [];
+    
+    const parsed = JSON.parse(stored);
+    return parsed.map((session: any) => {
+      if (session.type === 'audit') {
+        return {
+          ...session,
+          expandedTickets: new Set<string>(session.expandedTickets || []),
+          createdAt: new Date(session.createdAt),
+          taskIds: session.taskIds || [],
+        };
+      } else {
+        return {
+          ...session,
+          createdAt: new Date(session.createdAt),
+        };
+      }
+    });
+  } catch (error) {
+    console.error('Failed to load sessions from localStorage:', error);
+    return [];
+  }
+};
+
+export default function AutomationForm({ isPanelOpen: externalPanelOpen, onPanelToggle }: AutomationFormProps = {} as AutomationFormProps) {
   const [urls, setUrls] = useState('');
   const [selectedFramework, setSelectedFramework] = useState('WCAG');
-  const [output, setOutput] = useState('');
-  const [isOutputExpanded, setIsOutputExpanded] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('Processing...');
-  const [analysisResult, setAnalysisResult] = useState<{ summary: string, tickets: any[] } | null>(null);
-  const [screenshots, setScreenshots] = useState<string[]>([]);
-  const [isCreatingTickets, setIsCreatingTickets] = useState(false);
-  const [ticketCreationResult, setTicketCreationResult] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [agent, setAgent] = useState<'tinyfish' | 'yutori'>('tinyfish');
+  
+  const [sessions, setSessions] = useState<Session[]>(() => loadSessionsFromStorage());
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [internalPanelOpen, setInternalPanelOpen] = useState(false);
+  const resumedTasksRef = useRef<Set<string>>(new Set());
+  
+  const isSidePanelOpen = externalPanelOpen !== undefined ? externalPanelOpen : internalPanelOpen;
+  const setIsSidePanelOpen = (isOpen: boolean) => {
+    if (onPanelToggle) {
+      onPanelToggle(isOpen);
+    } else {
+      setInternalPanelOpen(isOpen);
+    }
+  };
+
+  // Auto-select most recent session on initial load
+  useEffect(() => {
+    if (sessions.length > 0 && !activeSessionId) {
+      const sortedSessions = [...sessions].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      setActiveSessionId(sortedSessions[0].id);
+    }
+  }, []);
+
+  // Save sessions to localStorage whenever they change
+  useEffect(() => {
+    if (sessions.length > 0) {
+      saveSessionsToStorage(sessions);
+    }
+  }, [sessions]);
+
+  // Auto-select most recent session when panel opens
+  useEffect(() => {
+    if (isSidePanelOpen && sessions.length > 0 && !activeSessionId) {
+      const sortedSessions = [...sessions].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      setActiveSessionId(sortedSessions[0].id);
+    }
+  }, [isSidePanelOpen, sessions, activeSessionId]);
   
   const [isFindingOwners, setIsFindingOwners] = useState(false);
   const [findOwnersResult, setFindOwnersResult] = useState<any>(null);
+  const [findSiteOwners, setFindSiteOwners] = useState(false);
   
   const [isCreatingScout, setIsCreatingScout] = useState(false);
-  const [createScoutResult, setCreateScoutResult] = useState<any>(null);
-  
-  const [lastLog, setLastLog] = useState<string>('');
-  const [expandedTickets, setExpandedTickets] = useState<Set<number>>(new Set());
-  const [agent, setAgent] = useState<'tinyfish' | 'yutori'>('tinyfish');
-
-  const HARDCODED_URLS = [
-    'https://www.w3.org/WAI/',
-    'https://webaim.org/',
-    'https://a11yproject.com/',
-  ];
+  const [buildSitemapFirst, setBuildSitemapFirst] = useState(false);
 
   const FRAMEWORKS = [
     { id: 'WCAG', name: 'WCAG (Web Content Accessibility Guidelines)', description: 'W3C standard; global default (2.1/2.2 most used).' },
@@ -104,7 +208,8 @@ Completion
         setFindOwnersResult(data);
     } catch (e: any) {
         console.error("Error finding owners:", e);
-        alert(`Failed to find owners: ${e.message}`);
+        // Don't show alert for parallel execution - just log
+        console.error(`Failed to find owners: ${e.message}`);
     } finally {
         setIsFindingOwners(false);
     }
@@ -112,7 +217,6 @@ Completion
 
   const handleCreateScout = async () => {
     setIsCreatingScout(true);
-    setCreateScoutResult(null);
     try {
         const response = await fetch('/api/create-scout', {
             method: 'POST',
@@ -125,7 +229,21 @@ Completion
         }
 
         const data = await response.json();
-        setCreateScoutResult(data);
+
+        // Create a scout session
+        const sessionId = `scout-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const newScoutSession: ScoutSession = {
+          type: 'scout',
+          id: sessionId,
+          scoutId: data.id || data.scout_id || '',
+          query: data.query || 'Find URLs that potentially are inaccessible',
+          viewUrl: data.view_url || `https://scouts.yutori.com/${data.id || data.scout_id || ''}`,
+          createdAt: new Date(),
+        };
+
+        setSessions(prev => [...prev, newScoutSession]);
+        setActiveSessionId(sessionId);
+        setIsSidePanelOpen(true);
     } catch (e: any) {
         console.error("Error creating scout:", e);
         alert(`Failed to create scout: ${e.message}`);
@@ -156,7 +274,21 @@ Completion
     return Array.from(foundUrls);
   };
 
-  const pollYutoriTask = async (taskId: string, targetUrl: string) => {
+  const updateSession = (sessionId: string, updates: Partial<AuditSession>) => {
+    setSessions(prev => prev.map(s => 
+      s.id === sessionId && s.type === 'audit' ? { ...s, ...updates } : s
+    ));
+  };
+  
+  const addTaskId = (sessionId: string, url: string, taskId: string) => {
+    setSessions(prev => prev.map(s => 
+      s.id === sessionId && s.type === 'audit'
+        ? { ...s, taskIds: [...s.taskIds, { url, taskId }] }
+        : s
+    ));
+  };
+
+  const pollYutoriTask = async (taskId: string, targetUrl: string, sessionId: string) => {
     const maxAttempts = 120; // 6 minutes (3s * 120)
     let attempts = 0;
     
@@ -171,24 +303,47 @@ Completion
           }
 
           if (data.status === 'succeeded' || data.status === 'completed') {
+            // Remove the task ID from the session since it's completed
+            setSessions(prev => prev.map(s => 
+              s.id === sessionId && s.type === 'audit'
+                ? { ...s, taskIds: s.taskIds.filter((t: { url: string; taskId: string }) => t.taskId !== taskId) }
+                : s
+            ));
+            resumedTasksRef.current.delete(taskId);
             resolve(data.result || '');
             return;
           }
 
           if (data.status === 'failed') {
+            // Remove the task ID from the session since it failed
+            setSessions(prev => prev.map(s => 
+              s.id === sessionId && s.type === 'audit'
+                ? { ...s, taskIds: s.taskIds.filter((t: { url: string; taskId: string }) => t.taskId !== taskId) }
+                : s
+            ));
+            resumedTasksRef.current.delete(taskId);
             reject(new Error('Yutori task failed'));
             return;
           }
 
-          setStatusMessage(`Auditing ${new URL(targetUrl).hostname}... (${data.status})`);
+          const statusMsg = `Auditing ${new URL(targetUrl).hostname}... (${data.status})`;
+          updateSession(sessionId, { statusMessage: statusMsg });
 
           attempts++;
           if (attempts < maxAttempts) {
             setTimeout(poll, 3000);
           } else {
+            // Remove the task ID from the session since it timed out
+            setSessions(prev => prev.map(s => 
+              s.id === sessionId && s.type === 'audit'
+                ? { ...s, taskIds: s.taskIds.filter((t: { url: string; taskId: string }) => t.taskId !== taskId) }
+                : s
+            ));
+            resumedTasksRef.current.delete(taskId);
             reject(new Error('Task timed out'));
           }
         } catch (err: any) {
+          resumedTasksRef.current.delete(taskId);
           reject(err);
         }
       };
@@ -197,12 +352,62 @@ Completion
     });
   };
 
-  const runConversion = async (log: string) => {
-      setStatusMessage("Generating report...");
-      setOutput((prev) => prev + "\n\n--- Automation Complete. Converting output... ---\n");
+  // Resume any active jobs after component is mounted (only once)
+  const hasResumedRef = useRef(false);
+  useEffect(() => {
+    if (hasResumedRef.current) return;
+    hasResumedRef.current = true;
+    
+    // Load sessions directly from storage to resume
+    const loadedSessions = loadSessionsFromStorage();
+    loadedSessions.forEach(session => {
+      if (session.type === 'audit' && session.isLoading && session.taskIds.length > 0 && session.agent === 'yutori') {
+        session.taskIds.forEach(({ url, taskId }) => {
+          // Only resume if we haven't already started polling this task
+          if (!resumedTasksRef.current.has(taskId)) {
+            resumedTasksRef.current.add(taskId);
+            pollYutoriTask(taskId, url, session.id)
+              .then(result => {
+                // Update the session with the result
+                setSessions(prev => prev.map(s => {
+                  if (s.id === session.id && s.type === 'audit') {
+                    const currentOutput = s.output + result;
+                    return { ...s, output: currentOutput };
+                  }
+                  return s;
+                }));
+                // Continue with conversion
+                return runConversion(result, session.id);
+              })
+              .catch(err => {
+                console.error(`Failed to resume task ${taskId}:`, err);
+                updateSession(session.id, { 
+                  isLoading: false,
+                  statusMessage: `Failed to resume: ${err.message}` 
+                });
+              });
+          }
+        });
+      }
+    });
+  }, []); // Only run once on mount
+
+  const runConversion = async (log: string, sessionId: string) => {
+      updateSession(sessionId, { statusMessage: "Generating report..." });
+      
       const foundScreenshots = extractScreenshotUrls(log);
-      setScreenshots(foundScreenshots);
-      setLastLog(log);
+      let currentOutput = '';
+      
+      setSessions(prev => {
+        const session = prev.find(s => s.id === sessionId);
+        if (!session || session.type !== 'audit') return prev;
+        currentOutput = session.output + "\n\n--- Automation Complete. Converting output... ---\n";
+        return prev.map(s => 
+          s.id === sessionId && s.type === 'audit'
+            ? { ...s, output: currentOutput, screenshots: foundScreenshots, lastLog: log }
+            : s
+        );
+      });
       
       try {
           const convertResponse = await fetch('/api/convert-output', {
@@ -213,50 +418,256 @@ Completion
           
           if (convertResponse.ok) {
               const conversionResult = await convertResponse.json();
-              setAnalysisResult(conversionResult);
-              setOutput((prev) => prev + "\nConversion successful.");
+              updateSession(sessionId, { 
+                analysisResult: conversionResult,
+                output: currentOutput + "\nConversion successful."
+              });
           } else {
-              setOutput((prev) => prev + "\nConversion failed.");
+              updateSession(sessionId, { output: currentOutput + "\nConversion failed." });
           }
       } catch (err) {
           console.error("Conversion error:", err);
-          setOutput((prev) => prev + "\nError converting output.");
+          updateSession(sessionId, { output: currentOutput + "\nError converting output." });
       }
+  };
+
+  const buildSitemap = async (baseUrl: string, sessionId: string): Promise<string[]> => {
+    const goal = "Create a sitemap.xml for me by traversing all the public subpages. Output a list of all subpages comma separated";
+    
+    updateSession(sessionId, { statusMessage: 'Building sitemap...' });
+    
+    try {
+      if (agent === 'tinyfish') {
+        const response = await fetch('/api/run-automation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: baseUrl, goal })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.details || errorData.error || 'Failed to build sitemap');
+        }
+
+        if (!response.body) {
+          throw new Error('No response body received');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullLog = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          fullLog += chunk;
+          
+          // Update status with progress
+          updateSession(sessionId, { statusMessage: 'Building sitemap... (discovering pages)' });
+        }
+
+        // Extract URLs from the stream
+        const urlPattern = /(?:https?:\/\/[^\s,]+(?:,\s*https?:\/\/[^\s,]+)*)/g;
+        const matches = fullLog.match(urlPattern);
+        if (matches && matches.length > 0) {
+          const allUrls = matches.join(',').split(',').map((u: string) => u.trim()).filter(Boolean) as string[];
+          const uniqueUrls = Array.from(new Set(allUrls));
+          return uniqueUrls;
+        } else {
+          // Fallback: extract any comma-separated list from the output
+          const commaSeparatedMatch = fullLog.match(/[^\n]+(?:,\s*[^\n]+)+/);
+          if (commaSeparatedMatch) {
+            const urls = commaSeparatedMatch[0].split(',').map((u: string) => u.trim()).filter(Boolean) as string[];
+            return urls;
+          } else {
+            throw new Error('Could not extract URLs from sitemap result');
+          }
+        }
+      } else {
+        // Yutori agent
+        const response = await fetch('/api/yutori-browser-agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ urls: [baseUrl], goal })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.details || data.error || 'Failed to create sitemap task');
+        }
+
+        if (data.tasks && data.tasks.length > 0) {
+          const createdTask = data.tasks[0];
+          const taskId = createdTask.id || createdTask.task_id;
+
+          if (taskId) {
+            // Poll for task completion
+            const maxAttempts = 60;
+            let attempts = 0;
+
+            const poll = async (): Promise<string> => {
+              updateSession(sessionId, { statusMessage: `Building sitemap... (${attempts * 30}s)` });
+              
+              const pollResponse = await fetch(`/api/yutori-browser-agent/${taskId}`);
+              const pollData = await pollResponse.json();
+
+              if (!pollResponse.ok) {
+                throw new Error(pollData.details || pollData.error || 'Failed to fetch task status');
+              }
+
+              if (pollData.status === 'succeeded' || pollData.status === 'completed') {
+                return pollData.result || '';
+              }
+
+              if (pollData.status === 'failed') {
+                throw new Error('Sitemap building task failed');
+              }
+
+              attempts++;
+              if (attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 30000));
+                return poll();
+              } else {
+                throw new Error('Sitemap building timed out');
+              }
+            };
+
+            const result = await poll();
+            
+            // Extract URLs from result
+            const urlPattern = /(?:https?:\/\/[^\s,]+(?:,\s*https?:\/\/[^\s,]+)*)/g;
+            const matches = result.match(urlPattern);
+            if (matches && matches.length > 0) {
+              const allUrls = matches.join(',').split(',').map((u: string) => u.trim()).filter(Boolean) as string[];
+              const uniqueUrls = Array.from(new Set(allUrls));
+              return uniqueUrls;
+            } else {
+              // Fallback: extract any comma-separated list
+              const commaSeparatedMatch = result.match(/[^\n]+(?:,\s*[^\n]+)+/);
+              if (commaSeparatedMatch) {
+                const urls = commaSeparatedMatch[0].split(',').map((u: string) => u.trim()).filter(Boolean) as string[];
+                return urls;
+              } else {
+                throw new Error('Could not extract URLs from sitemap result');
+              }
+            }
+          } else if (createdTask.status === 'succeeded' || createdTask.status === 'completed') {
+            const result = createdTask.result || '';
+            const urlPattern = /(?:https?:\/\/[^\s,]+(?:,\s*https?:\/\/[^\s,]+)*)/g;
+            const matches = result.match(urlPattern);
+            if (matches && matches.length > 0) {
+              const allUrls = matches.join(',').split(',').map((u: string) => u.trim()).filter(Boolean) as string[];
+              const uniqueUrls = Array.from(new Set(allUrls));
+              return uniqueUrls;
+            } else {
+              throw new Error('Could not extract URLs from sitemap result');
+            }
+          } else {
+            throw new Error('No sitemap task was created');
+          }
+        } else {
+          throw new Error('No sitemap task was created');
+        }
+
+        if (data.errors && data.errors.length > 0) {
+          throw new Error(`Sitemap building failed: ${data.errors.map((e: any) => e.error).join(', ')}`);
+        }
+      }
+    } catch (err: any) {
+      updateSession(sessionId, { statusMessage: `Sitemap building failed: ${err.message}` });
+      throw err;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setStatusMessage("Initializing...");
-    setOutput('');
-    setAnalysisResult(null);
-    setTicketCreationResult(null);
-    setScreenshots([]);
 
-    const urlList = urls.split(',').map(u => {
-        let url = u.trim();
-        if (url.length > 0 && !/^https?:\/\//i.test(url)) {
-            url = 'https://' + url;
-        }
-        return url;
+    let urlList = urls.split(',').map(u => {
+      let url = u.trim();
+      if (url.length > 0 && !/^https?:\/\//i.test(url)) {
+        url = 'https://' + url;
+      }
+      return url;
     }).filter(u => u.length > 0);
 
     if (urlList.length === 0) {
-      setOutput('Error: No valid URLs provided.');
-      setIsLoading(false);
+      alert('Error: No valid URLs provided.');
       return;
     }
 
+    // Create new session early so we can update status
+    const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const newSession: AuditSession = {
+      type: 'audit',
+      id: sessionId,
+      urls: urlList,
+      framework: selectedFramework,
+      agent,
+      output: '',
+      statusMessage: 'Initializing...',
+      isLoading: true,
+      analysisResult: null,
+      screenshots: [],
+      lastLog: '',
+      expandedTickets: new Set<string>(),
+      ticketCreationResult: null,
+      isCreatingTickets: false,
+      createdAt: new Date(),
+      taskIds: []
+    };
+
+    setSessions(prev => [...prev, newSession]);
+    setActiveSessionId(sessionId);
+    setIsSidePanelOpen(true);
+
+    // Start finding owners in parallel if checkbox is checked
+    if (findSiteOwners) {
+      handleFindOwners(urlList).catch(err => {
+        console.error("Parallel find owners task failed:", err);
+      });
+    }
+
     try {
+      // Build sitemap first if checkbox is checked
+      if (buildSitemapFirst) {
+        const baseUrl = urlList[0];
+        if (baseUrl) {
+          try {
+            const discoveredUrls = await buildSitemap(baseUrl, sessionId);
+            if (discoveredUrls.length > 0) {
+              updateSession(sessionId, { 
+                statusMessage: `Sitemap built: ${discoveredUrls.length} pages found. Starting audit...`,
+                urls: discoveredUrls
+              });
+              urlList = discoveredUrls;
+            } else {
+              updateSession(sessionId, { statusMessage: 'No pages found in sitemap. Using original URL...' });
+            }
+          } catch (err: any) {
+            updateSession(sessionId, { statusMessage: `Sitemap building failed: ${err.message}. Continuing with original URL...` });
+            // Continue with original URL if sitemap building fails
+          }
+        }
+      }
+
       for (const targetUrl of urlList) {
         try {
           const hostname = new URL(targetUrl).hostname;
-          setStatusMessage(`Auditing ${hostname}...`);
+          updateSession(sessionId, { statusMessage: `Auditing ${hostname}...` });
         } catch (e) {
-          setStatusMessage(`Auditing ${targetUrl}...`);
+          updateSession(sessionId, { statusMessage: `Auditing ${targetUrl}...` });
         }
         
-        setOutput((prev) => prev + `\n\n--- Processing: ${targetUrl} (${agent}) ---\n`);
+        setSessions(prev => {
+          const session = prev.find(s => s.id === sessionId && s.type === 'audit') || newSession;
+          if (session.type !== 'audit') return prev;
+          const currentOutput = session.output + `\n\n--- Processing: ${targetUrl} (${agent}) ---\n`;
+          return prev.map(s => s.id === sessionId && s.type === 'audit' ? { ...s, output: currentOutput } : s);
+        });
+        
         let fullLog = "";
         
         try {
@@ -275,7 +686,11 @@ Completion
             }
 
             if (!response.body) {
-                setOutput((prev) => prev + "\nNo response body received.");
+                setSessions(prev => prev.map(s => 
+                  s.id === sessionId && s.type === 'audit'
+                    ? { ...s, output: s.output + "\nNo response body received." }
+                    : s
+                ));
                 continue;
             }
 
@@ -286,13 +701,13 @@ Completion
               const { done, value } = await reader.read();
               if (done) break;
               
-              // Decode and append the chunk
               const chunk = decoder.decode(value, { stream: true });
               fullLog += chunk;
-              setOutput((prev) => prev + chunk);
+              setSessions(prev => prev.map(s => 
+                s.id === sessionId && s.type === 'audit' ? { ...s, output: s.output + chunk } : s
+              ));
             }
           } else {
-            // Yutori Agent
             const response = await fetch('/api/yutori-browser-agent', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -307,14 +722,20 @@ Completion
 
             if (data.tasks && data.tasks.length > 0) {
                const createdTask = data.tasks[0];
-               if (createdTask.id || createdTask.task_id) {
-                 // Poll for result
-                 const result = await pollYutoriTask(createdTask.id || createdTask.task_id, targetUrl);
+               const taskId = createdTask.id || createdTask.task_id;
+               if (taskId) {
+                 // Store the task ID so we can resume if needed
+                 addTaskId(sessionId, targetUrl, taskId);
+                 const result = await pollYutoriTask(taskId, targetUrl, sessionId);
                  fullLog = result;
-                 setOutput((prev) => prev + result);
+                 setSessions(prev => prev.map(s => 
+                   s.id === sessionId && s.type === 'audit' ? { ...s, output: s.output + result } : s
+                 ));
                } else if (createdTask.status === 'succeeded') {
                  fullLog = createdTask.result || '';
-                 setOutput((prev) => prev + fullLog);
+                 setSessions(prev => prev.map(s => 
+                   s.id === sessionId && s.type === 'audit' ? { ...s, output: s.output + fullLog } : s
+                 ));
                }
             } else {
                throw new Error('No Yutori task created');
@@ -325,102 +746,112 @@ Completion
             }
           }
 
-          // Force conversion at the end of the stream regardless of "status: complete" text
-          await runConversion(fullLog);
+          await runConversion(fullLog, sessionId);
 
         } catch (innerError) {
           console.error(`Error processing ${targetUrl}:`, innerError);
-          setOutput((prev) => prev + `\nError processing ${targetUrl}: ${innerError instanceof Error ? innerError.message : String(innerError)}`);
+          setSessions(prev => prev.map(s => 
+            s.id === sessionId && s.type === 'audit'
+              ? { ...s, output: s.output + `\nError processing ${targetUrl}: ${innerError instanceof Error ? innerError.message : String(innerError)}` }
+              : s
+          ));
         }
       }
     } catch (error) {
       console.error(error);
-      setOutput((prev) => prev + `\nFatal Error: ${error instanceof Error ? error.message : String(error)}`);
+      setSessions(prev => prev.map(s => 
+        s.id === sessionId && s.type === 'audit'
+          ? { ...s, output: s.output + `\nFatal Error: ${error instanceof Error ? error.message : String(error)}` }
+          : s
+      ));
     } finally {
-      setIsLoading(false);
-      setOutput((prev) => prev + `\n\n--- All tasks completed ---`);
+      setSessions(prev => prev.map(s => 
+        s.id === sessionId && s.type === 'audit'
+          ? { ...s, isLoading: false, output: s.output + `\n\n--- All tasks completed ---` }
+          : s
+      ));
     }
   };
 
-  const handleCreateLinearTickets = async () => {
-    if (!analysisResult?.tickets) return;
+  const handleCreateLinearTickets = async (sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session || session.type !== 'audit' || !session.analysisResult?.tickets) return;
     
-    setIsCreatingTickets(true);
+    updateSession(sessionId, { isCreatingTickets: true });
     try {
         const response = await fetch('/api/create-linear-issues', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tickets: analysisResult.tickets })
+            body: JSON.stringify({ tickets: session.analysisResult.tickets })
         });
         
         const result = await response.json();
-        setTicketCreationResult(result);
+        updateSession(sessionId, { ticketCreationResult: result, isCreatingTickets: false });
     } catch (e) {
         console.error("Error creating tickets:", e);
         alert("Failed to create tickets in Linear.");
-    } finally {
-        setIsCreatingTickets(false);
+        updateSession(sessionId, { isCreatingTickets: false });
     }
   };
 
-  const handleRedoAnalysis = async () => {
-    if (!lastLog) return;
-    setIsLoading(true);
-    setAnalysisResult(null);
-    await runConversion(lastLog);
-    setIsLoading(false);
+  const handleRedoAnalysis = async (sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session || session.type !== 'audit' || !session.lastLog) return;
+    
+    updateSession(sessionId, { isLoading: true, analysisResult: null });
+    await runConversion(session.lastLog, sessionId);
+    updateSession(sessionId, { isLoading: false });
   };
 
+  const handleClearOutput = (sessionId: string) => {
+    updateSession(sessionId, { output: '' });
+  };
+
+  const handleSetExpandedTickets = (sessionId: string, tickets: Set<string>) => {
+    updateSession(sessionId, { expandedTickets: tickets });
+  };
+
+  const activeSession = sessions.find(s => s.id === activeSessionId);
+  const isLoading = (activeSession?.type === 'audit' && activeSession.isLoading) || false;
+  const statusMessage = (activeSession?.type === 'audit' && activeSession.statusMessage) || '';
+
   return (
-    <div className="space-y-6">
-      <AutomationInputCard
-        urls={urls}
-        setUrls={setUrls}
-        selectedFramework={selectedFramework}
-        setSelectedFramework={setSelectedFramework}
-        agent={agent}
-        setAgent={setAgent}
-        isLoading={isLoading}
-        statusMessage={statusMessage}
-        frameworks={FRAMEWORKS}
-        onSubmit={handleSubmit}
-      />
-        <SitemapBuilderModal />
+    <>
+      <div className="space-y-6">
+        <AutomationInputCard
+          urls={urls}
+          setUrls={setUrls}
+          selectedFramework={selectedFramework}
+          setSelectedFramework={setSelectedFramework}
+          agent={agent}
+          setAgent={setAgent}
+          isLoading={isLoading}
+          statusMessage={statusMessage}
+          frameworks={FRAMEWORKS}
+          onSubmit={handleSubmit}
+          buildSitemapFirst={buildSitemapFirst}
+          setBuildSitemapFirst={setBuildSitemapFirst}
+          findSiteOwners={findSiteOwners}
+          setFindSiteOwners={setFindSiteOwners}
+        />
 
-      <CreateScoutCard
-        isCreatingScout={isCreatingScout}
-        createScoutResult={createScoutResult}
-        onCreateScout={handleCreateScout}
-      />
+        <CreateScoutCard
+          isCreatingScout={isCreatingScout}
+          onCreateScout={handleCreateScout}
+        />
+      </div>
 
-      <FindSiteOwnersCard
-        urls={urls}
-        isFindingOwners={isFindingOwners}
-        findOwnersResult={findOwnersResult}
-        onFindOwners={handleFindOwners}
-        hardcodedUrls={HARDCODED_URLS}
-      />
-
-      <OutputConsole
-        output={output}
-        isOutputExpanded={isOutputExpanded}
-        setIsOutputExpanded={setIsOutputExpanded}
-        onClear={() => setOutput('')}
-      />
-
-      <ScreenshotsCard screenshots={screenshots} />
-
-      <AnalysisResultsCard
-        analysisResult={analysisResult}
-        isLoading={isLoading}
-        lastLog={lastLog}
-        expandedTickets={expandedTickets}
-        setExpandedTickets={setExpandedTickets}
-        ticketCreationResult={ticketCreationResult}
-        isCreatingTickets={isCreatingTickets}
+      <AuditSidePanel
+        isOpen={isSidePanelOpen}
+        onClose={() => setIsSidePanelOpen(false)}
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        onSessionChange={setActiveSessionId}
         onRedoAnalysis={handleRedoAnalysis}
         onCreateLinearTickets={handleCreateLinearTickets}
+        onClearOutput={handleClearOutput}
+        onSetExpandedTickets={handleSetExpandedTickets}
       />
-    </div>
+    </>
   );
 }

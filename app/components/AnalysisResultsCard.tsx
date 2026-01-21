@@ -17,8 +17,8 @@ interface AnalysisResultsCardProps {
   analysisResult: AnalysisResult | null;
   isLoading: boolean;
   lastLog: string;
-  expandedTickets: Set<number>;
-  setExpandedTickets: (tickets: Set<number>) => void;
+  expandedTickets: Set<string>;
+  setExpandedTickets: (tickets: Set<string>) => void;
   ticketCreationResult: any;
   isCreatingTickets: boolean;
   onRedoAnalysis: () => void;
@@ -39,14 +39,14 @@ export default function AnalysisResultsCard({
   if (!analysisResult) return null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-3xl p-8 space-y-6 text-gray-900">
+    <div className="bg-white border border-gray-200 rounded-3xl p-8 space-y-6 text-gray-900 card-shadow">
       <div className="flex items-center justify-between border-b border-gray-200 pb-6">
         <h3 className="text-xl font-bold text-gray-900">Analysis Results</h3>
         <div className="flex items-center gap-3">
           <button
             onClick={onRedoAnalysis}
             disabled={isLoading || !lastLog}
-            className="text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2"
+            className="text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 hover:shadow-sm disabled:opacity-50"
           >
             <svg className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -69,21 +69,27 @@ export default function AnalysisResultsCard({
           <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-600">Identified Issues ({analysisResult.tickets?.length || 0})</h4>
         </div>
         <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
-          {analysisResult.tickets?.map((ticket, i) => {
-            const isExpanded = expandedTickets.has(i);
+          {analysisResult.tickets
+            ?.slice()
+            .sort((a, b) => {
+              const priorityOrder = { high: 0, medium: 1, low: 2 };
+              return priorityOrder[a.priority] - priorityOrder[b.priority];
+            })
+            .map((ticket, i) => {
+            const isExpanded = expandedTickets.has(ticket.title);
             return (
               <div 
-                key={i} 
+                key={`${ticket.title}-${i}`} 
                 onClick={() => {
                   const newExpanded = new Set(expandedTickets);
                   if (isExpanded) {
-                    newExpanded.delete(i);
+                    newExpanded.delete(ticket.title);
                   } else {
-                    newExpanded.add(i);
+                    newExpanded.add(ticket.title);
                   }
                   setExpandedTickets(newExpanded);
                 }}
-                className="group p-4 border border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 hover:border-blue-400 transition-all duration-200 cursor-pointer"
+                className="group p-4 border border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 hover:border-blue-400 transition-all duration-200 cursor-pointer hover:shadow-sm"
               >
                 <div className="flex justify-between items-start mb-2">
                   <span className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{ticket.title}</span>
@@ -106,7 +112,7 @@ export default function AnalysisResultsCard({
             <button
               onClick={onCreateLinearTickets}
               disabled={isCreatingTickets}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.99] shadow-sm hover:shadow-md"
             >
               {isCreatingTickets ? 'Creating Tickets...' : 'Export to Linear'}
             </button>

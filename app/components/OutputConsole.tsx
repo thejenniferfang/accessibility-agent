@@ -21,7 +21,7 @@ export default function OutputConsole({ output, isOutputExpanded, setIsOutputExp
   if (!output) return null;
 
   return (
-    <div className={`bg-white border border-gray-200 rounded-2xl p-4 overflow-hidden flex flex-col transition-all duration-300 ${isOutputExpanded ? 'h-125' : 'h-16'}`}>
+    <div className={`bg-white border border-gray-200 rounded-2xl p-4 overflow-hidden flex flex-col transition-all duration-300 card-shadow ${isOutputExpanded ? 'h-125' : 'h-16'}`}>
       <div 
         className="flex justify-between items-center mb-4 pb-0 cursor-pointer"
         onClick={() => setIsOutputExpanded(!isOutputExpanded)}
@@ -39,7 +39,7 @@ export default function OutputConsole({ output, isOutputExpanded, setIsOutputExp
               e.stopPropagation();
               onClear();
             }}
-            className="text-xs text-gray-600 hover:text-gray-900 transition-colors px-2 py-1 rounded hover:bg-gray-100 z-10"
+            className="text-xs text-gray-600 hover:text-gray-900 transition-colors px-2 py-1 rounded-lg hover:bg-gray-100 z-10"
           >
             Clear
           </button>

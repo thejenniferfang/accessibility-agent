@@ -57,14 +57,14 @@ export default function InteractiveEyes() {
       {/* Eye 1 */}
       <div 
         ref={eye1Ref}
-        className="w-8 h-12 bg-white rounded-[20px] flex items-center justify-center overflow-hidden relative"
+        className="w-8 h-12 bg-white rounded-[20px] flex items-center justify-center overflow-hidden relative border border-gray-100 shadow-sm"
       >
         <div 
-          className="w-4 h-6 bg-black rounded-[50%] absolute"
+          className="w-4 h-6 bg-gray-900 rounded-[50%] absolute transition-transform duration-150 ease-out"
           style={{ transform: `translate(${pupil1Pos.x * 0.8}px, ${pupil1Pos.y * 1.5}px)` }} // Adjust multiplier for movement range
         />
         {/* Reflection */}
-        <div className="w-1 h-1 bg-white rounded-full absolute bottom-2 z-10 opacity-90" 
+        <div className="w-1 h-1 bg-white rounded-full absolute bottom-2 z-10 opacity-90 transition-transform duration-150 ease-out" 
              style={{ transform: `translate(${pupil1Pos.x * 0.8}px, ${pupil1Pos.y * 1.5 + 8}px)` }}
         />
       </div>
@@ -72,14 +72,14 @@ export default function InteractiveEyes() {
       {/* Eye 2 */}
       <div 
         ref={eye2Ref}
-        className="w-8 h-12 bg-white rounded-[20px] flex items-center justify-center overflow-hidden relative"
+        className="w-8 h-12 bg-white rounded-[20px] flex items-center justify-center overflow-hidden relative border border-gray-100 shadow-sm"
       >
         <div 
-          className="w-4 h-6 bg-black rounded-full absolute"
+          className="w-4 h-6 bg-gray-900 rounded-full absolute transition-transform duration-150 ease-out"
           style={{ transform: `translate(${pupil2Pos.x * 0.8}px, ${pupil2Pos.y * 1.5}px)` }}
         />
         {/* Reflection */}
-        <div className="w-1 h-1 bg-white rounded-full absolute bottom-2 z-10 opacity-90" 
+        <div className="w-1 h-1 bg-white rounded-full absolute bottom-2 z-10 opacity-90 transition-transform duration-150 ease-out" 
              style={{ transform: `translate(${pupil2Pos.x * 0.8}px, ${pupil2Pos.y * 1.5 + 8}px)` }}
         />
       </div>
