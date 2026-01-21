@@ -2,11 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { urls } = await req.json();
-
-    if (!urls || !Array.isArray(urls) || urls.length === 0) {
-      return NextResponse.json({ error: "Invalid URLs provided" }, { status: 400 });
-    }
 
     if (!process.env.YUTORI_API_KEY) {
       return NextResponse.json({ error: "YUTORI_API_KEY is not set" }, { status: 500 });
