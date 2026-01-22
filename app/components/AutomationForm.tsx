@@ -98,6 +98,18 @@ export default function AutomationForm({ isPanelOpen: externalPanelOpen, onPanel
   const [selectedFramework, setSelectedFramework] = useState('WCAG');
   const [agent, setAgent] = useState<'tinyfish' | 'yutori'>('tinyfish');
   
+  // Set agent based on URL path
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      if (pathname.includes('/yutori')) {
+        setAgent('yutori');
+      } else {
+        setAgent('tinyfish');
+      }
+    }
+  }, []);
+  
   const [sessions, setSessions] = useState<Session[]>(() => loadSessionsFromStorage());
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [internalPanelOpen, setInternalPanelOpen] = useState(false);
@@ -823,8 +835,6 @@ Completion
           setUrls={setUrls}
           selectedFramework={selectedFramework}
           setSelectedFramework={setSelectedFramework}
-          agent={agent}
-          setAgent={setAgent}
           isLoading={isLoading}
           statusMessage={statusMessage}
           frameworks={FRAMEWORKS}

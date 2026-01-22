@@ -186,7 +186,7 @@ export default function AuditSidePanel({
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-600 font-medium">Framework:</span>
+                      <span className="hidden md:inline text-gray-600 font-medium">Framework:</span>
                       <span className="ml-2 text-gray-900">{activeSession.framework}</span>
                     </div>
                     <div>

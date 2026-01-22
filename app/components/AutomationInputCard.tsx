@@ -13,8 +13,6 @@ interface AutomationInputCardProps {
   setUrls: (urls: string) => void;
   selectedFramework: string;
   setSelectedFramework: (framework: string) => void;
-  agent: 'tinyfish' | 'yutori';
-  setAgent: (agent: 'tinyfish' | 'yutori' | ((prev: 'tinyfish' | 'yutori') => 'tinyfish' | 'yutori')) => void;
   isLoading: boolean;
   statusMessage: string;
   frameworks: Framework[];
@@ -30,8 +28,6 @@ export default function AutomationInputCard({
   setUrls,
   selectedFramework,
   setSelectedFramework,
-  agent,
-  setAgent,
   isLoading,
   statusMessage,
   frameworks,
@@ -74,17 +70,15 @@ export default function AutomationInputCard({
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <label htmlFor="urls" className="block text-xs font-medium uppercase tracking-wider text-gray-600 flex-1">Target URL(s)</label>
-            <div className="relative flex items-center gap-2" ref={frameworkMenuRef}>
-              <span className="text-xs font-medium text-gray-600 uppercase tracking-wider">Framework:</span>
-              <span className="px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-md border border-gray-200">
-                {selectedFramework}
-              </span>
+            <div className="relative" ref={frameworkMenuRef}>
               <button
                 type="button"
                 onClick={() => setIsFrameworkMenuOpen(!isFrameworkMenuOpen)}
-                className="p-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:shadow-sm"
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:shadow-sm"
                 title="Select Audit Framework"
               >
+                <span className="hidden md:inline text-xs font-medium text-gray-600 uppercase tracking-wider">Framework:</span>
+                <span className="text-xs font-medium">{selectedFramework}</span>
                 <svg 
                   className={`w-4 h-4 transition-transform ${isFrameworkMenuOpen ? 'rotate-180' : ''}`} 
                   fill="none" 
@@ -112,7 +106,7 @@ export default function AutomationInputCard({
                       >
                         <div className="flex flex-col">
                           <span className="font-medium">{f.id}</span>
-                          <span className="text-xs text-gray-500 mt-0.5">{f.name}</span>
+                          <span className="text-xs text-gray-500 mt-0.5">{f.description}</span>
                         </div>
                         {selectedFramework === f.id && (
                           <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,26 +242,6 @@ export default function AutomationInputCard({
           </div>
         </div>
 
-        <div className="flex justify-between items-center">
-            <div className="flex flex-col gap-1">
-              <p className="text-xs text-gray-500">Separate multiple URLs with commas.</p>
-              <p className="text-xs text-gray-500">
-                {frameworks.find(f => f.id === selectedFramework)?.description}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-medium transition-colors ${agent === 'yutori' ? 'text-gray-900' : 'text-gray-400'}`}>Yutori</span>
-              <button
-                type="button"
-                onClick={() => setAgent(prev => prev === 'yutori' ? 'tinyfish' : 'yutori')}
-                className={`w-10 h-6 rounded-full transition-colors relative focus:outline-none ${agent === 'tinyfish' ? 'bg-purple-500' : 'bg-gray-300'}`}
-                title="Toggle Agent"
-              >
-                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ease-in-out ${agent === 'tinyfish' ? 'translate-x-5' : 'translate-x-1'}`} />
-              </button>
-              <span className={`text-xs font-medium transition-colors ${agent === 'tinyfish' ? 'text-gray-900' : 'text-gray-400'}`}>Tinyfish</span>
-            </div>
-          </div>
 
         <button
           type="submit"
