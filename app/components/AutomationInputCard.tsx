@@ -13,8 +13,6 @@ interface AutomationInputCardProps {
   setUrls: (urls: string) => void;
   selectedFramework: string;
   setSelectedFramework: (framework: string) => void;
-  isLoading: boolean;
-  statusMessage: string;
   frameworks: Framework[];
   onSubmit: (e: React.FormEvent) => void;
   buildSitemapFirst: boolean;
@@ -28,8 +26,6 @@ export default function AutomationInputCard({
   setUrls,
   selectedFramework,
   setSelectedFramework,
-  isLoading,
-  statusMessage,
   frameworks,
   onSubmit,
   buildSitemapFirst,
@@ -125,8 +121,7 @@ export default function AutomationInputCard({
               <button
                 type="button"
                 onClick={() => setIsSitemapMenuOpen(!isSitemapMenuOpen)}
-                disabled={isLoading}
-                className="absolute left-3 z-10 p-1.5 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                className="absolute left-3 z-10 p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
                 title="Build sitemap"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,8 +135,7 @@ export default function AutomationInputCard({
                 onChange={(e) => setUrls(e.target.value)}
                 placeholder="https://example.com, https://another.com"
                 required
-                disabled={isLoading}
-                className={`w-full py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 focus:shadow-sm ${
+                className={`w-full py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all focus:shadow-sm ${
                   buildSitemapFirst || findSiteOwners ? 'pl-11 pr-32' : 'pl-11 pr-4'
                 }`}
               />
@@ -152,8 +146,7 @@ export default function AutomationInputCard({
                       <button
                         type="button"
                         onClick={() => setBuildSitemapFirst(false)}
-                        disabled={isLoading}
-                        className="p-0.5 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-0.5 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 transition-colors"
                         title="Remove build sitemap"
                       >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,8 +161,7 @@ export default function AutomationInputCard({
                       <button
                         type="button"
                         onClick={() => setFindSiteOwners(false)}
-                        disabled={isLoading}
-                        className="p-0.5 rounded-full bg-teal-100 hover:bg-teal-200 text-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-0.5 rounded-full bg-teal-100 hover:bg-teal-200 text-teal-600 transition-colors"
                         title="Remove find site owners"
                       >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,20 +179,19 @@ export default function AutomationInputCard({
                 <div className="absolute z-50 left-0 top-full mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden card-shadow">
                 <div className="p-4 space-y-4">
                   <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      id="build-sitemap-dropdown"
-                      checked={buildSitemapFirst}
-                      onChange={(e) => {
-                        setBuildSitemapFirst(e.target.checked);
-                        if (e.target.checked) {
-                          // Close dropdown after checking
-                          setTimeout(() => setIsSitemapMenuOpen(false), 200);
-                        }
-                      }}
-                      disabled={isLoading}
-                      className="mt-0.5 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                    />
+                      <input
+                        type="checkbox"
+                        id="build-sitemap-dropdown"
+                        checked={buildSitemapFirst}
+                        onChange={(e) => {
+                          setBuildSitemapFirst(e.target.checked);
+                          if (e.target.checked) {
+                            // Close dropdown after checking
+                            setTimeout(() => setIsSitemapMenuOpen(false), 200);
+                          }
+                        }}
+                        className="mt-0.5 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      />
                     <div className="flex-1">
                       <label htmlFor="build-sitemap-dropdown" className="text-sm font-medium text-gray-900 cursor-pointer block">
                         Build sitemap first
@@ -223,7 +214,6 @@ export default function AutomationInputCard({
                             setTimeout(() => setIsSitemapMenuOpen(false), 200);
                           }
                         }}
-                        disabled={isLoading}
                         className="mt-0.5 w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
                       />
                       <div className="flex-1">
@@ -245,20 +235,10 @@ export default function AutomationInputCard({
 
         <button
           type="submit"
-          disabled={isLoading || !urls.trim()}
+          disabled={!urls.trim()}
           className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-3.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transform active:scale-[0.99] shadow-sm hover:shadow-md disabled:hover:bg-gray-900"
         >
-          {isLoading ? (
-            <>
-              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              {statusMessage}
-            </>
-          ) : (
-            'Run Automation'
-          )}
+          Run Audit
         </button>
       </form>
     </div>

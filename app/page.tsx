@@ -10,7 +10,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen text-gray-900 relative overflow-hidden">
-      <header className={`absolute top-0 left-0 w-full px-4 pt-4 md:pt-6 pb-2 flex items-center justify-between z-[60] ${isPanelOpen ? 'hidden md:flex' : 'flex'}`}>
+      <header className={`absolute top-0 left-0 w-full px-4 pt-4 md:pt-6 pb-2 flex items-center justify-between z-[60] ${isPanelOpen ? 'hidden' : 'flex'}`}>
         <h1 className="text-xl md:text-2xl font-serif italic text-gray-900 tracking-tight">Access AI</h1>
         <button
           onClick={() => setIsPanelOpen(!isPanelOpen)}

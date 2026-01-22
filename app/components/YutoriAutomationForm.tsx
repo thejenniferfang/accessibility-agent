@@ -132,7 +132,7 @@ export default function YutoriAutomationForm() {
                 Processing...
               </>
             ) : (
-              'Run Automation'
+              'Run Audit'
             )}
           </button>
         </form>

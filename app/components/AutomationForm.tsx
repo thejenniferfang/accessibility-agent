@@ -835,8 +835,6 @@ Completion
           setUrls={setUrls}
           selectedFramework={selectedFramework}
           setSelectedFramework={setSelectedFramework}
-          isLoading={isLoading}
-          statusMessage={statusMessage}
           frameworks={FRAMEWORKS}
           onSubmit={handleSubmit}
           buildSitemapFirst={buildSitemapFirst}
