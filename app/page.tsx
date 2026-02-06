@@ -43,7 +43,7 @@ export default function Home() {
 
           <div className="text-center">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl tracking-tight text-gray-900 px-4 md:px-8 leading-tight">
-              Fix Acccessibility Issues in an instant.
+              Fix Accessibility Issues in an instant.
             </h1>
             
             <div className="mt-4 md:mt-6 text-base md:text-lg text-gray-600 font-medium px-4">
